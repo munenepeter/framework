@@ -18,3 +18,8 @@ function validate ($formData){
    
    Return $formData;
 }
+//Instead of this approach of a single function
+//Just write a class a real request class for 
+//Which will be accessible to all controllers 
+//From the base controller and will validate the 
+//Form input
