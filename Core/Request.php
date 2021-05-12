@@ -14,4 +14,35 @@ class Request {
 
         return $_SERVER['REQUEST_METHOD'];
     }
+    //get all the post data
+    public function getFormData(){
+        
+        //check if the data was post data
+        if(strtolower(self::method()) === 'post'{
+            
+             return $_POST;
+            
+        }
+       if(strtolower(self::method()) === 'get'{
+           
+           return $_GET;
+       }
+    }
+    //validate and create an error bag
+    public function validate(){
+    
+    foreach( $_POST as $key => $value ){
+        
+        if(empty($value)){
+            echo "The {$key} field is Required \n";
+            
+           }elseif($value){
+
+           $data = [];
+           $data[$key] = $value; 
+           }
+       }
+     return $data;
+    }
+        
 }
