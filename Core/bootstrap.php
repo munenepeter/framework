@@ -23,3 +23,4 @@ function validate ($formData){
 //Which will be accessible to all controllers 
 //From the base controller and will validate the 
 //Form input
+//Maybe I'll add the function inside of controllers
