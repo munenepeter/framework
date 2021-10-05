@@ -28,15 +28,30 @@ class Request {
            return $_GET;
        }
     }
-    //validate and create an error bag
-    public function validate(){
+    /**
+    * Get all the get data provided you give the name
+    *
+    * @param string $name this is the name of the input/select
+    *
+    * @return string the data from the $_GET Superglobal
+    */      
+    public static function get(string $name){
+       if(!isset($_GET[$name])){
+           return;
+       }
+       return $_GET[$name];
     
-    foreach( $_POST as $key => $value ){
+    }
+    //validate and create an error bag
+    private function validate($data){
+    
+    foreach($data as $key => $value ){
         
         if(empty($value)){
+            
             echo "The {$key} field is Required \n";
             
-           }elseif($value){
+         }elseif($value){
 
            $data = [];
            $data[$key] = $value; 
