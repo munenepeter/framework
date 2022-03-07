@@ -1,26 +1,20 @@
 <?php
 //require all files here
+require 'helpers.php';
 
-//function for redirecting 
+//include all autoloaders here
 
-function view($name){
+//configure config to always point to config.php
+App::bind('config', require 'config.php');
 
-    return require "views/{$name}.view.php";
-}
+/**
+ *Bind the Database credentials and connect to the app
+ *Bind the requred database file above to 
+ *an instance of the connections
+*/
 
-function validate ($formData){
-    if(empty ($formData){
-     return "{$formData} cannot be empty";
-     }
-   //Add trim
-   //Htmlspecialchars
-   //Others
-   
-   Return $formData;
-}
-//Instead of this approach of a single function
-//Just write a class a real request class for 
-//Which will be accessible to all controllers 
-//From the base controller and will validate the 
-//Form input
-//Maybe I'll add the function inside of controllers
+session_start();
+
+App::bind('database', new QueryBuilder(
+    Connection::make(App::get('config')['sqlite'])
+));

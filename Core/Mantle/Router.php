@@ -1,5 +1,5 @@
 <?php
-namespace App\Core;
+namespace Clive\Core\Mantle;
 
 class Router{
     public $routes = [
@@ -35,11 +35,11 @@ class Router{
             );
         }
 
-        throw new \Exception("There is no routes for this URI {$uri}");
+        throw new \Exception("There are no defined routes for this URI <b>/{$uri}</b>", 501);
     }
     protected function callAction($controller, $action) {
 
-        $controller = "App\\Controllers\\{$controller}";
+        $controller = "Clive\\Controllers\\{$controller}";
 
         $controller = new $controller;
 
@@ -47,7 +47,7 @@ class Router{
 
         if (!method_exists($controller, $action)) {
 
-            throw new \Exception("{$name} doesn't not respond to {$action} Method!");
+            throw new \Exception("{$name} doesn't not respond to {$action} Method!", 500);
         }
 
         return $controller->$action();

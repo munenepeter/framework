@@ -2,7 +2,7 @@
 
 return [
     //Get the configuration details ie DB connections
-    'database' => [
+    'mysqldatabase' => [
         'name' => 'test',
         'username' => 'root',
         'password' => '',
@@ -10,5 +10,9 @@ return [
         'options' => [
           PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ]
-      ]
-    ];
+        ],
+        
+         'sqlite' =>[
+           'path' => 'Core/Database/sqlite/database.sqlite'
+         ]         
+        ];
