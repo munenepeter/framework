@@ -1,4 +1,4 @@
-<?php
+App<?php
 
 namespace Clive\Core\Database;
 
