@@ -13,6 +13,6 @@ return [
         ],
         
          'sqlite' =>[
-           'path' => 'Core/Database/sqlite/database.sqlite'
+           'path' => 'path/to/sqlite/database.sqlite'
          ]         
         ];
