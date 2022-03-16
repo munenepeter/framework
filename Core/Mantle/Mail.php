@@ -1,5 +1,5 @@
 <?php
-namespace Clive\Core\Mantle;
+namespace App\Core\Mantle;
 
 class Mail{
    public static $welcomeTemplate = <<<MAIL

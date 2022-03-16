@@ -1,5 +1,5 @@
 <?php
-namespace Clive\Core\Mantle;
+namespace App\Core\Mantle;
 
 class Router{
     public $routes = [
@@ -39,7 +39,7 @@ class Router{
     }
     protected function callAction($controller, $action) {
 
-        $controller = "Clive\\Controllers\\{$controller}";
+        $controller = "App\\Controllers\\{$controller}";
 
         $controller = new $controller;
 

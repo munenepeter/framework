@@ -1,7 +1,7 @@
 <?php
-namespace Clive\Core\Mantle;
+namespace App\Core\Mantle;
 
-use Clive\Core\Mantle\Request;
+use App\Core\Mantle\Request;
 
 class Paginator{
     private static $per_page;

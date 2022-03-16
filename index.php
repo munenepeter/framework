@@ -1,7 +1,7 @@
 App<?php
 
-use Clive\Core\Mantle\Router;
-use Clive\Core\Mantle\Request;
+use App\Core\Mantle\Router;
+use App\Core\Mantle\Request;
 
 //require the main file joining all the parts of the app
 require 'Core/bootstrap.php';

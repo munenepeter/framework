@@ -1,10 +1,10 @@
 <?php
 
-namespace Clive\Core\Mantle;
+namespace App\Core\Mantle;
 
-use Clive\Core\Mantle\App;
-use Clive\Core\Mantle\Request;
-use Clive\Core\Mantle\Session;
+use App\Core\Mantle\App;
+use App\Core\Mantle\Request;
+use App\Core\Mantle\Session;
 
 class Auth {
     

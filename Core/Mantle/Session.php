@@ -1,6 +1,6 @@
 <?php
 
-namespace Clive\Core\Mantle;
+namespace App\Core\Mantle;
 
 class Session {
 

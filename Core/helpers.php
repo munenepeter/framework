@@ -1,6 +1,6 @@
 <?php
 
-use Clive\Core\Mantle\Session;
+use App\Core\Mantle\Session;
 
 /**
  * View

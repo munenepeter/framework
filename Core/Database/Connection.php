@@ -1,6 +1,6 @@
 App<?php
 
-namespace Clive\Core\Database;
+namespace App\Core\Database;
 
 class Connection{
     //make a connection to the DB
