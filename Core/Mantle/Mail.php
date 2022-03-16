@@ -3,7 +3,7 @@ namespace App\Core\Mantle;
 
 class Mail{
    public static $welcomeTemplate = <<<MAIL
-   <h1>Welcome to Clive @{username}, </h1>
+   <h1>Welcome to App @{username}, </h1>
    <p>In order for you to continue please <a href="{host}/login" target="_blank" rel="noopener noreferrer">log in</a> with
    </p>
    <br>
@@ -15,11 +15,11 @@ class Mail{
    <br>
    <br>
    <p>Kind Regards,</p>
-   <p>The Clive Team,</p>
-   <p>www.clive.com</p>
+   <p>The App Team,</p>
+   <p>www.App.com</p>
 MAIL;
 
-    public static $from = "admin@clive.com";
+    public static $from = "admin@App.com";
     public static $to;
     public static $subject;
 
@@ -43,6 +43,6 @@ MAIL;
 }
 
 // Mail::$subject = "A test";
-// Mail::$to = "newuser@clive.com";
-// Mail::send("Welcome to Clive");
+// Mail::$to = "newuser@App.com";
+// Mail::send("Welcome to App");
 

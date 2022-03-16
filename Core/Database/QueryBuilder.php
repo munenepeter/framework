@@ -1,7 +1,7 @@
 <?php
-namespace Clive\Core\Database;
+namespace App\Core\Database;
 
-use Clive\Core\Mantle\Logger;
+use App\Core\Mantle\Logger;
 
 
 /**
@@ -41,7 +41,7 @@ class QueryBuilder {
 
     $model = substr_replace(ucwords($table), '', -1);
 
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
   }
   /**
    * Select
@@ -62,7 +62,7 @@ class QueryBuilder {
       throw new \Exception("Something is up with your Select {$statement}!");
     }
     $model = ucwords($table);
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
   }
 
   /**
@@ -94,7 +94,7 @@ class QueryBuilder {
       throw new \Exception("Something is up with your Select {$statement}!");
     }
     $model = ucwords(substr($table, 0, -1));
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
   }
 
   public function insert(string $table, array $parameters) {
