@@ -1,6 +1,9 @@
-App<?php
+<?php
+namespace Clive\Core\Database;
 
-namespace App\Core\Database;
+use Clive\Core\Mantle\Logger;
+
+
 /**
  * @package QueryBuilder
  * 
@@ -36,8 +39,9 @@ class QueryBuilder {
       throw new \Exception("Something is up with your Select {$statement}!");
     }
 
-    $model = ucwords($table);
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
+    $model = substr_replace(ucwords($table), '', -1);
+
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
   }
   /**
    * Select
@@ -58,7 +62,7 @@ class QueryBuilder {
       throw new \Exception("Something is up with your Select {$statement}!");
     }
     $model = ucwords($table);
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
   }
 
   /**
@@ -82,12 +86,38 @@ class QueryBuilder {
 
     $condition =  implode(' = ', $condition);
     $statement = $this->pdo->prepare("select {$values}  from {$table} where {$condition}");
+    
+    $sql = "select {$values}  from {$table} where {$condition}";
+    Logger::log("INFO: Called(where) $sql");
 
-  
     if (!$statement->execute()) {
       throw new \Exception("Something is up with your Select {$statement}!");
     }
     $model = ucwords(substr($table, 0, -1));
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "App\\Models\\{$model}");
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Clive\\Models\\{$model}");
+  }
+
+  public function insert(string $table, array $parameters) {
+
+    $sql = sprintf(
+      'insert into %s (%s) values (%s)',
+
+      $table,
+
+      implode(', ', array_keys($parameters)),
+
+      ':' . implode(', :', array_keys($parameters))
+    );
+    Logger::log("INFO: Called (insert) $sql");
+    try {
+
+      $statement = $this->pdo->prepare($sql);
+      $statement->execute($parameters);
+
+    } catch (\Exception $e) {
+
+      throw new \Exception('Something is up with your Insert!' . $e->getMessage());
+      die();
+    }
   }
 }
