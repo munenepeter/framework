@@ -1,4 +1,4 @@
-App<?php
+<?php
 
 namespace Clive\Core\Mantle;
 
