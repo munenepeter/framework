@@ -1,6 +1,6 @@
 <?php
 
-use App\Core\Mantle\Session;
+use Clive\Core\Mantle\Session;
 
 /**
  * View
@@ -12,7 +12,7 @@ use App\Core\Mantle\Session;
  * 
  * @return File view
  */
-function view(string $filename, array $data = []) {
+function view($filename, $data = []) {
     extract($data);
     return require "views/{$filename}.view.php";
 }
@@ -36,7 +36,7 @@ function redirect(string $path) {
  * 
  * @return File view
  */
-function abort(string $message, int $code) {
+function abort($message, $code) {
 
     //   http_response_code($code);
 
@@ -45,6 +45,11 @@ function abort(string $message, int $code) {
         'message' => $message
     ]);
     exit;
+}
+
+function redirectback($data){
+    extract($data);
+    redirect($_SERVER['HTTP_REFERER']);
 }
 /**
  * Auth Helper
@@ -68,7 +73,6 @@ function auth() {
  * @return Bool Session
  */
 function guest() {
-    //does not work!!
     if (auth()) {
         return false;
     }
@@ -80,7 +84,7 @@ function guest() {
  * --from stackoverflow
  * 
  * @param string $phrase the word to be pluralised
- * @param int $value don't know what it does but if you want it to work just put 2
+ * @param int $value 
  * 
  * @return string plural 
  */
@@ -99,6 +103,12 @@ function plural($phrase, $value) {
     }
     return $phrase;
 }
+
+
+
+
+
+
 
 /*
     function auth() {
