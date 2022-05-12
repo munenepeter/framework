@@ -1,7 +1,6 @@
-# My Framework
-_We will change the name later :)_
+# Babel
 
-My Simple Framework based on laravel 
+My Simple Framework inspired by laravel 
 
 ## Development
 
