@@ -1,6 +1,6 @@
 <?php
 
-namespace Chungu\Core\Mantle;
+namespace App\Core\Mantle;
 
 class Router {
     public $routes = [
