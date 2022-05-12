@@ -1,0 +1,7 @@
+composer.phar
+/.vscode/
+/vendor/
+/.git/
+/Core/Mantle/Logs/logs.log
+/Core/Database/sqlite/database.sqlite
+/Core/Database/sqlite/database.db

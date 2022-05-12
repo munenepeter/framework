@@ -1,0 +1,16 @@
+{
+    "name": "babel/babel",
+    "description": "A simple online shop for accesories",
+    "authors": [
+        {
+            "name": "munenepeter",
+            "email": "munenenjega@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "App\\": "./"
+        }
+    }
+}
