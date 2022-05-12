@@ -1,12 +1,10 @@
 <?php
+
 namespace App\Controllers;
 
-class PagesController{
+class PagesController {
+    public function index() {
 
-
-    public function index()
-    {
-    
         return view('index');
     }
 }
