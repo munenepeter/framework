@@ -3,6 +3,31 @@
 use App\Core\Mantle\Session;
 
 /**
+ * checkCreateView
+ * 
+ * Create a view for route if it does not exist
+ * 
+ * @param String $view view to be created
+ * 
+ * @return Void
+ */
+function checkCreateView(string $view) {
+    if (!file_exists("views/{$view}.view.php")) {
+
+        if (ENV === 'production') {
+            throw new \Exception("The file is missing", 404);
+            exit;
+        }
+        fopen("views/{$view}.view.php", 'a');
+
+        $data = "<?php include_once 'base.view.php';?><div class=\"grid place-items-center h-screen\">
+       Created {$view}'s view; please edit</div>";
+
+        file_put_contents("views/{$view}.view.php", $data);
+    }
+}
+
+/**
  * View
  * 
  * Loads a specified file along with its data
@@ -10,10 +35,13 @@ use App\Core\Mantle\Session;
  * @param String $filename Page to displayed
  * @param Array $data Data to be passed along
  * 
- * @return File view
+ * @return Require view
  */
-function view($filename, $data = []) {
+function view(string $filename, array $data = []) {
     extract($data);
+
+    checkCreateView($filename);
+
     return require "views/{$filename}.view.php";
 }
 /**
@@ -47,7 +75,7 @@ function abort($message, $code) {
     exit;
 }
 
-function redirectback($data){
+function redirectback($data) {
     extract($data);
     redirect($_SERVER['HTTP_REFERER']);
 }
@@ -65,68 +93,3 @@ function auth() {
     }
     return Session::get('loggedIn');
 }
-/**
- * Guest Helper
- * 
- * Opposite of Auth
- * 
- * @return Bool Session
- */
-function guest() {
-    if (auth()) {
-        return false;
-    }
-}
-
-/**
- * plural
- * This returns the plural version of common english words
- * --from stackoverflow
- * 
- * @param string $phrase the word to be pluralised
- * @param int $value 
- * 
- * @return string plural 
- */
-
-function plural($phrase, $value) {
-    $plural = '';
-    if ($value > 1) {
-        for ($i = 0; $i < strlen($phrase); $i++) {
-            if ($i == strlen($phrase) - 1) {
-                $plural .= ($phrase[$i] == 'y') ? 'ies' : (($phrase[$i] == 's' || $phrase[$i] == 'x' || $phrase[$i] == 'z' || $phrase[$i] == 'ch' || $phrase[$i] == 'sh') ? $phrase[$i] . 'es' : $phrase[$i] . 's');
-            } else {
-                $plural .= $phrase[$i];
-            }
-        }
-        return $plural;
-    }
-    return $phrase;
-}
-
-
-
-
-
-
-
-/*
-    function auth() {
-        $a = true;
-
-        $class = new class {
-            public $name = "Peter" ;
-
-            public function name() {
-              echo $this->name;
-            }
-        };
-
-        if ($a) {
-            return $class;
-        }
-        return $a;
-    }
-
-    auth()->name();
-*/
