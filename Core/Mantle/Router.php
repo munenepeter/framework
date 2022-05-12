@@ -1,7 +1,8 @@
 <?php
-namespace App\Core\Mantle;
 
-class Router{
+namespace Chungu\Core\Mantle;
+
+class Router {
     public $routes = [
 
         'GET' => [],
@@ -28,18 +29,37 @@ class Router{
 
     public function direct($uri, $requestType) {
 
-        if (array_key_exists($uri, $this->routes[$requestType])) {
 
-            return $this->callAction(
-                ...explode('@', $this->routes[$requestType][$uri])
-            );
+
+        //check if the passed argument is callable
+        // if (!array_key_exists($uri, $this->routes[$requestType]))
+        //     throw new \Exception("Oops, Seems you're lost, There is no such page! <b>/{$uri}</b>", 404);
+        // exit;
+        if (!isset($this->routes[$requestType][$uri]))
+            throw new \Exception("Oops, you forgot to include <b>/{$uri}</b>, There is no such route! ", 404);
+
+        if (!is_callable($this->routes[$requestType][$uri])) {
+
+            if (array_key_exists($uri, $this->routes[$requestType])) {
+                //check if the route exists
+                return $this->callAction(
+                    ...explode('@', $this->routes[$requestType][$uri])
+                );
+            }
+
+            throw new \Exception("Oops, you forgot to include <b>/{$uri}</b>, There is no such route! ", 404);
+            exit;
         }
 
-        throw new \Exception("There are no defined routes for this URI <b>/{$uri}</b>", 501);
+        $this->routes[$requestType][$uri]();
     }
     protected function callAction($controller, $action) {
 
-        $controller = "App\\Controllers\\{$controller}";
+        $controller = "Chungu\\Controllers\\{$controller}";
+
+        if (!class_exists($controller)) {
+            throw new \Exception("Class <b>$controller</b> doesn't not exist!", 500);
+        }
 
         $controller = new $controller;
 
