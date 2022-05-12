@@ -1,8 +1,8 @@
 <?php
 
-namespace Clive\Models;
+namespace App\Models;
 
-use Clive\Core\Mantle\App;
+use App\Core\Mantle\App;
 
 class Model {
 
