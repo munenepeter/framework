@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Core\Database;
 
 use App\Core\Mantle\Logger;
@@ -82,11 +83,11 @@ class QueryBuilder {
 
     $values =  implode(', ', $values);
     //pure madness
-    $condition[1] = sprintf("%s$condition[1]%s", '"','"');
+    $condition[1] = sprintf("%s$condition[1]%s", '"', '"');
 
     $condition =  implode(' = ', $condition);
     $statement = $this->pdo->prepare("select {$values}  from {$table} where {$condition}");
-    
+
     $sql = "select {$values}  from {$table} where {$condition}";
     Logger::log("INFO: Called(where) $sql");
 
@@ -113,7 +114,6 @@ class QueryBuilder {
 
       $statement = $this->pdo->prepare($sql);
       $statement->execute($parameters);
-
     } catch (\Exception $e) {
 
       throw new \Exception('Something is up with your Insert!' . $e->getMessage());
