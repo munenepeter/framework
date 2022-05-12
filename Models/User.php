@@ -1,6 +1,6 @@
 <?php
 
- namespace App\Models;
+ namespace Babel\Models;
 
  class User extends Model{
 

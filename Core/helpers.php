@@ -1,6 +1,6 @@
 <?php
 
-use App\Core\Mantle\Session;
+use Babel\Core\Mantle\Session;
 
 /**
  * checkCreateView

@@ -1,8 +1,8 @@
 <?php
 
-use App\Core\Mantle\App;
-use App\Core\Database\Connection;
-use App\Core\Database\QueryBuilder;
+use Babel\Core\Mantle\App;
+use Babel\Core\Database\Connection;
+use Babel\Core\Database\QueryBuilder;
 
 define('ENV', 'production');
 

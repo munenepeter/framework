@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Controllers;
+namespace Babel\Controllers;
 
 class PagesController {
     public function index() {

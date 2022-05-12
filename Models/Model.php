@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Models;
+namespace Babel\Models;
 
-use App\Core\Mantle\App;
+use Babel\Core\Mantle\App;
 
 class Model {
 

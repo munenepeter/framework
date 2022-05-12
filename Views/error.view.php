@@ -1,6 +1,6 @@
 <?php
 
-use App\Core\Mantle\App; ?>
+use Babel\Core\Mantle\App; ?>
 
 <!DOCTYPE html>
 <html lang="en">

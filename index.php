@@ -1,7 +1,7 @@
 App<?php
 
-use App\Core\Mantle\Router;
-use App\Core\Mantle\Request;
+use Babel\Core\Mantle\Router;
+use Babel\Core\Mantle\Request;
 
 //require the main file joining all the parts of the app
 require 'Core/bootstrap.php';

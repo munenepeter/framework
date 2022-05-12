@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Core\Mantle;
+namespace Babel\Core\Mantle;
 
 class App{
   public static array $registry = [];

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Core\Mantle;
+namespace Babel\Core\Mantle;
 
 class Logger {
     public static function log($msg) {
