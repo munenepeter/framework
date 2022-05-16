@@ -4,7 +4,6 @@ namespace Babel\Core\Mantle;
 
 class Router {
     public $routes = [
-
         'GET' => [],
         'POST' => []
     ];
