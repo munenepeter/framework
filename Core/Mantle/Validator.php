@@ -2,6 +2,8 @@
 
 namespace Babel\Core\Mantle;
 
+use Babel\Core\Mantle\App;
+
 class Validator {
 
 
@@ -144,11 +146,7 @@ class Validator {
      * @return \PDO
      */
     private function db(): \PDO {
-        static $pdo;
-        // if the connection is not initialized
-        // connect to the database
-
-        return $pdo;
+        return App::get('database');
     }
 
     /**
@@ -166,12 +164,12 @@ class Validator {
 
         $sql = "SELECT $column FROM $table WHERE $column = :value";
 
-        // $stmt = db()->prepare($sql);
-        // $stmt->bindValue(":value", $data[$field]);
+        $stmt = $this->db()->prepare($sql);
+        $stmt->bindValue(":value", $data[$field]);
 
-        // $stmt->execute();
+        $stmt->execute();
 
-        // return $stmt->fetchColumn() === false;
+        return $stmt->fetchColumn() === false;
     }
 
 
@@ -234,3 +232,5 @@ class Validator {
         return $errors;
     }
 }
+
+

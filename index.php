@@ -1,4 +1,4 @@
-App<?php
+<?php
 
 use Babel\Core\Mantle\Router;
 use Babel\Core\Mantle\Request;
