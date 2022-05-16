@@ -23,7 +23,7 @@ $router->post('test', function () {
     return view('test', ['e' => $e]);
 });
 
-$router->get('api/users', 'ApiController@customers');
+$router->get('api/customers', 'ApiController@customers');
 
 //Can't work
 //$router->post('test', 'PagesController@testpost');
