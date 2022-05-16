@@ -8,12 +8,11 @@ define('ENV', 'production');
 
 //require all files here
 require 'helpers.php';
-
+require 'validation-rules.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 
 //configure config to always point to config.php
 App::bind('config', require 'config.php');
-
 /**
  *Bind the Database credentials and connect to the app
  *Bind the requred database file above to 

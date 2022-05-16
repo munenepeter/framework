@@ -55,7 +55,7 @@ class Router {
     }
     protected function callAction($controller, $action) {
 
-        $controller = "Chungu\\Controllers\\{$controller}";
+        $controller = "Babel\\Controllers\\{$controller}";
 
         if (!class_exists($controller)) {
             throw new \Exception("Class <b>$controller</b> doesn't not exist!", 500);
