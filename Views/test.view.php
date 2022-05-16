@@ -2,23 +2,27 @@
 
 use Babel\Core\Mantle\Validator;
 
+ 
+ 
+
 echo '<pre>';
 
 $data = [
     'firstname' => '',
-    'username' => 'bob',
-    'address' => 'This is my address',
+    'username' => '8h',
+    'lastname' => 'test',
+    'address' => '',
     'zipcode' => '999',
     'email' => 'jo@',
-    'password' => 'test123',
+    'password' => '',
     'password2' => 'test',
 ];
 
 
 
 $fields = [
-    'firstname' => 'required, max:255',
-    'lastname' => 'required, max: 255',
+    'firstname' => 'required',
+    'lastname' => 'required',
     'address' => 'required | min: 10, max:255',
     'zipcode' => 'between: 5,6',
     'username' => 'required | alphanumeric | between: 3,255 ',
@@ -29,7 +33,8 @@ $fields = [
 
 
 $validator =  new Validator();
+print_r($validator->validate($data, $fields));
+echo '<br>';
+// $errors = validate($data, $fields);
 
-$errors = $validator->validate($data, $fields);
-
-print_r($errors);
+// print_r($errors);
