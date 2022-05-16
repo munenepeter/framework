@@ -47,10 +47,10 @@ class Model {
       return  App::get('database')->selectWhere(static::tableName(), $data, $condition);
         //User::all();
     }
-    public static function find(array $data) {
+    public static function find(array $id) {
         //Returns all the records in the db for a certain  model/table
        
-         return  App::get('database')->selectWhere(static::tableName(), $data, $condition);
+         return  App::get('database')->selectAllWhere(static::tableName(), $id);
            //User::all();
        }
 }
