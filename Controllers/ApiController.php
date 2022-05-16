@@ -6,8 +6,8 @@ use Babel\Core\Mantle\App;
 
 class ApiController {
 
-    public function users() {
-        $data = App::get('database')->selectAll('Customers');
+    public function customers() {
+        $data = App::get('database')->query('Select * from Customers');
         echo json_encode($data);
     }
 }

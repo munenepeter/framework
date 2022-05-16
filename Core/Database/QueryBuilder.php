@@ -66,6 +66,19 @@ class QueryBuilder {
     return $statement->fetchAll(\PDO::FETCH_CLASS,  "Babel\\Models\\{$model}");
   }
 
+  public function selectAllWhere(string $table, array $values) {
+
+    $values =  implode('=', $values);
+    $statement = $this->pdo->prepare("select * from {$table} where {$values}");
+
+    if (!$statement->execute()) {
+
+      throw new \Exception("Something is up with your Select {$statement}!");
+    }
+    $model = ucwords($table);
+    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Babel\\Models\\{$model}");
+  }
+
   /**
    * SelectWhere
    * 
