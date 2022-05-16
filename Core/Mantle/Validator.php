@@ -16,7 +16,7 @@ class Validator {
         'secure' => 'The %s must have between 8 and 64 characters and contain at least one number, one upper case letter, one lower case letter and one special character',
         'unique' => 'The %s already exists',
     ];
- 
+
 
     /**
      * Return true if a string is not empty
@@ -24,7 +24,7 @@ class Validator {
      * @param string $field
      * @return bool
      */
-    function is_required(array $data, string $field): bool {
+    public function is_required(array $data, string $field): bool {
         return isset($data[$field]) && trim($data[$field]) !== '';
     }
 
@@ -34,7 +34,7 @@ class Validator {
      * @param string $field
      * @return bool
      */
-    function is_email(array $data, string $field): bool {
+    public function is_email(array $data, string $field): bool {
         if (empty($data[$field])) {
             return true;
         }
@@ -49,7 +49,7 @@ class Validator {
      * @param int $min
      * @return bool
      */
-    function is_min(array $data, string $field, int $min): bool {
+    public function is_min(array $data, string $field, int $min): bool {
         if (!isset($data[$field])) {
             return true;
         }
@@ -64,7 +64,7 @@ class Validator {
      * @param int $max
      * @return bool
      */
-    function is_max(array $data, string $field, int $max): bool {
+    public function is_max(array $data, string $field, int $max): bool {
         if (!isset($data[$field])) {
             return true;
         }
@@ -79,7 +79,7 @@ class Validator {
      * @param int $max
      * @return bool
      */
-    function is_between(array $data, string $field, int $min, int $max): bool {
+    public function is_between(array $data, string $field, int $min, int $max): bool {
         if (!isset($data[$field])) {
             return true;
         }
@@ -95,7 +95,7 @@ class Validator {
      * @param string $other
      * @return bool
      */
-    function is_same(array $data, string $field, string $other): bool {
+    public function is_same(array $data, string $field, string $other): bool {
         if (isset($data[$field], $data[$other])) {
             return $data[$field] === $data[$other];
         }
@@ -113,7 +113,7 @@ class Validator {
      * @param string $field
      * @return bool
      */
-    function is_alphanumeric(array $data, string $field): bool {
+    public function is_alphanumeric(array $data, string $field): bool {
         if (!isset($data[$field])) {
             return true;
         }
@@ -127,7 +127,7 @@ class Validator {
      * @param string $field
      * @return bool
      */
-    function is_secure(array $data, string $field): bool {
+    public function is_secure(array $data, string $field): bool {
         if (!isset($data[$field])) {
             return false;
         }
@@ -143,11 +143,11 @@ class Validator {
      *
      * @return \PDO
      */
-    function db(): \PDO {
+    private function db(): \PDO {
         static $pdo;
         // if the connection is not initialized
         // connect to the database
-     
+
         return $pdo;
     }
 
@@ -159,19 +159,19 @@ class Validator {
      * @param string $column
      * @return bool
      */
-    function is_unique(array $data, string $field, string $table, string $column): bool {
+    public function is_unique(array $data, string $field, string $table, string $column): bool {
         if (!isset($data[$field])) {
             return true;
         }
 
         $sql = "SELECT $column FROM $table WHERE $column = :value";
 
-       // $stmt = db()->prepare($sql);
-       // $stmt->bindValue(":value", $data[$field]);
+        // $stmt = db()->prepare($sql);
+        // $stmt->bindValue(":value", $data[$field]);
 
-       // $stmt->execute();
+        // $stmt->execute();
 
-       // return $stmt->fetchColumn() === false;
+        // return $stmt->fetchColumn() === false;
     }
 
 
@@ -186,7 +186,7 @@ class Validator {
      * @param array $messages
      * @return array
      */
-    function validate(array $data, array $fields, array $messages = []): array {
+    public function validate(array $data, array $fields, array $messages = []): array {
         // Split the array by a separator, trim each element
         // and return the array
         $split = fn ($str, $separator) => array_map('trim', explode($separator, $str));
