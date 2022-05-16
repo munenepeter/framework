@@ -5,6 +5,7 @@ use Babel\Core\Database\Connection;
 use Babel\Core\Database\QueryBuilder;
 
 define('ENV', 'production');
+define('APP_NAME', 'Babel');
 
 //require all files here
 require 'helpers.php';
