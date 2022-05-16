@@ -4,7 +4,8 @@ namespace Babel\Controllers;
 
 class ApiController {
 
-    public function users(){
-        return json_decode("No Data");
+    public function users() {
+     
+        echo json_encode("No Data");
     }
 }
