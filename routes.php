@@ -12,15 +12,13 @@ $router->get('test', function () {
 
 $router->post('test', function () {
 
-    $fields = [
-        'name' => 'required',
-        'email' => 'required | email',
-        'password' => 'required | secure',
-    ];
-
-
     $validator =  new Validator();
-    $e = $validator->validate($_POST, $fields);
+
+    $e = $validator->validate($_POST, [
+        'username' => 'required',
+        'email' => 'required|email',
+        'password' => 'required|secure',
+    ]);
 
     return view('test', ['e' => $e]);
 });
