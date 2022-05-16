@@ -1,5 +1,6 @@
 <?php
 
+use Babel\Controllers\PagesController;
 use Babel\Core\Mantle\Validator;
 //get routes
 
@@ -22,3 +23,6 @@ $router->post('test', function () {
 
     return view('test', ['e' => $e]);
 });
+
+//Can't work
+//$router->post('test', 'PagesController@testpost');
