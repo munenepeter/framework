@@ -14,7 +14,7 @@ return [
   ],
   //when using SQLITE
   'sqlite' => [
-    'path' => 'Core/Database/babel.sqlite'
+    'path' => 'Core/Database/db/test.sqlite'
   ],
   'codes' => [
     403 => ['403 Forbidden', 'The server refused to fulfill the request.'],

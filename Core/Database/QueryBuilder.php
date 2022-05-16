@@ -120,4 +120,20 @@ class QueryBuilder {
       die();
     }
   }
+   //Albtatry Query FROM table_name WHERE condition;
+   public function query(string $sql) {
+    try {
+
+      $statement = $this->pdo->prepare($sql);
+      $statement->execute();
+
+      return $statement->fetchAll(\PDO::FETCH_ASSOC);
+    } catch (\Exception $e) {
+
+      Logger::log("ERROR: Something is up with your Query -> $sql, " .$e->getMessage());
+
+      throw new \Exception('Something is up with your Query!' . $e->getMessage());
+      die();
+    }
+  }
 }

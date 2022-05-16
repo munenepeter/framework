@@ -2,10 +2,12 @@
 
 namespace Babel\Controllers;
 
+use Babel\Core\Mantle\App;
+
 class ApiController {
 
     public function users() {
-     
-        echo json_encode("No Data");
+        $data = App::get('database')->selectAll('Customers');
+        echo json_encode($data);
     }
 }
