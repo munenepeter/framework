@@ -24,5 +24,7 @@ $router->post('test', function () {
     return view('test', ['e' => $e]);
 });
 
+$router->get('api/users', 'APIController@users');
+
 //Can't work
 //$router->post('test', 'PagesController@testpost');
