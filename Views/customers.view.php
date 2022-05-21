@@ -1,3 +1,9 @@
-<?php include_once 'base.view.php'?>
 <?php
-echo $id;
+
+use Babel\Models\Customer;
+
+ include_once 'base.view.php'?>
+<?php
+  $c = Customer::find($id);
+
+  var_dump($c);

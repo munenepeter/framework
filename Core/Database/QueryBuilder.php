@@ -68,7 +68,7 @@ class QueryBuilder {
 
   public function selectAllWhere(string $table, int $value) {
   
-    $model = ucwords($table);
+    $model = singularize(ucwords($table));
 
     $statement = $this->pdo->prepare("select * from {$table} where {$model}ID = $value");
 
