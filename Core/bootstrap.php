@@ -4,7 +4,7 @@ use Babel\Core\Mantle\App;
 use Babel\Core\Database\Connection;
 use Babel\Core\Database\QueryBuilder;
 
-define('ENV', 'production');
+define('ENV','development');
 define('APP_NAME', 'Babel');
 
 //require all files here

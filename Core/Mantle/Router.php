@@ -27,17 +27,20 @@ class Router {
     }
 
     public function direct($uri, $requestType) {
-
-
-
-        //check if the passed argument is callable
-        // if (!array_key_exists($uri, $this->routes[$requestType]))
-        //     throw new \Exception("Oops, Seems you're lost, There is no such page! <b>/{$uri}</b>", 404);
-        // exit;
-        if (!isset($this->routes[$requestType][$uri]))
-            throw new \Exception("Oops, you forgot to include <b>/{$uri}</b>, There is no such route! ", 404);
-
-        if (!is_callable($this->routes[$requestType][$uri])) {
+        $params = [];
+        $regexUri = '';
+        foreach ($this->routes[$requestType] as $route => $controller) {
+            if (preg_match("%^{$route}$%", $uri, $matches) === 1) {
+                // var_dump($matches);
+                $regexUri = $route;
+                unset($matches[0]);
+                $params = $matches;
+                break;
+            }
+        }
+        if (is_callable($this->routes[$requestType][$regexUri])) {
+            $this->routes[$requestType][$regexUri](...$params);
+        } else {
 
             if (array_key_exists($uri, $this->routes[$requestType])) {
                 //check if the route exists
@@ -49,8 +52,6 @@ class Router {
             throw new \Exception("Oops, you forgot to include <b>/{$uri}</b>, There is no such route! ", 404);
             exit;
         }
-
-        $this->routes[$requestType][$uri]();
     }
     protected function callAction($controller, $action) {
 

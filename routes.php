@@ -10,8 +10,8 @@ $router->get('test', function () {
     return view('test');
 });
 
-$router->get('/customers/(.*)', function ($id) {
-    return view('customers');
+$router->get('customers/(.*)/?', function ($id = 10) {
+    return view('customers', ['id' => $id]);
 });
 
 $router->post('test', function () {
