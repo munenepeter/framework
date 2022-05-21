@@ -10,6 +10,10 @@ $router->get('test', function () {
     return view('test');
 });
 
+$router->get('/customers/(.*)', function ($id) {
+    return view('customers');
+});
+
 $router->post('test', function () {
 
     $validator =  new Validator();
