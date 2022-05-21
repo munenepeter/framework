@@ -6,4 +6,4 @@ use Babel\Models\Customer;
 <?php
   $c = Customer::find($id);
 
-  var_dump($c);
+var_dump((array)$c);
