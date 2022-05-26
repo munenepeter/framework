@@ -11,7 +11,7 @@ use Babel\Core\Mantle\Logger;
  * Class that interacts with the db
  * @return Object Model returns an instance of Model class
  * 
- * @todo Implement App::get('database')->select('users')->where(['email', $email]);
+ * 
  */
 
 class QueryBuilder {
