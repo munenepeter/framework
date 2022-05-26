@@ -1,6 +1,5 @@
 <?php
 
-use Babel\Controllers\PagesController;
 use Babel\Core\Mantle\Validator;
 //get routes
 
@@ -10,6 +9,11 @@ $router->get('', 'PagesController@index');
 $router->get('test', function () {
     return view('test');
 });
+
+// $router->get('customers/(.*)/?', function ($id = 10) {
+//     return view('customers', ['id' => $id]);
+// });
+$router->get('customers/(.*)/?', 'PagesController@customer');
 
 $router->post('test', function () {
 
@@ -23,6 +27,8 @@ $router->post('test', function () {
 
     return view('test', ['e' => $e]);
 });
+
+$router->get('api/customers', 'ApiController@customers');
 
 //Can't work
 //$router->post('test', 'PagesController@testpost');

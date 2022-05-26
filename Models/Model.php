@@ -11,7 +11,7 @@ class Model {
         $model_name = new static;
         return $model_name;
     }
-
+   
     private static function tableName() {
 
         //get table name form the model
@@ -47,4 +47,10 @@ class Model {
       return  App::get('database')->selectWhere(static::tableName(), $data, $condition);
         //User::all();
     }
+    public static function find(int $id) {
+        //Returns all the records in the db for a certain  model/table
+       
+         return  App::get('database')->selectAllWhere(static::tableName(), (int)$id);
+           //User::all();
+       }
 }
