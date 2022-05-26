@@ -3,13 +3,15 @@
 My Simple Framework inspired by laravel 
 
 
-## Installing
+## Installation
 ```
 composer require tabel/tabel
 ```
 ## Development
 
 Want to contribute? Great!
+
+Just fork or clone the repo
 
 ## License
 
