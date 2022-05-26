@@ -42,9 +42,17 @@ class Router {
             $this->routes[$requestType][$regexUri](...$params);
         } else {
 
-            if (array_key_exists($uri, $this->routes[$requestType])) {
-                //check if the route exists
+            if (!empty($regexUri) && $regexUri != "") {
                 return $this->callAction(
+                    $params,
+                    ...explode('@', $this->routes[$requestType][$regexUri])
+                );
+            }
+
+            if (array_key_exists($uri, $this->routes[$requestType])) {
+
+                return $this->callAction(
+                    $params,
                     ...explode('@', $this->routes[$requestType][$uri])
                 );
             }
@@ -53,7 +61,7 @@ class Router {
             exit;
         }
     }
-    protected function callAction($controller, $action) {
+    protected function callAction($params, $controller, $action) {
 
         $controller = "Babel\\Controllers\\{$controller}";
 
@@ -70,6 +78,6 @@ class Router {
             throw new \Exception("{$name} doesn't not respond to {$action} Method!", 500);
         }
 
-        return $controller->$action();
+        return $controller->$action(...$params);
     }
 }

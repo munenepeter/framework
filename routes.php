@@ -10,9 +10,10 @@ $router->get('test', function () {
     return view('test');
 });
 
-$router->get('customers/(.*)/?', function ($id = 10) {
-    return view('customers', ['id' => $id]);
-});
+// $router->get('customers/(.*)/?', function ($id = 10) {
+//     return view('customers', ['id' => $id]);
+// });
+$router->get('customers/(.*)/?', 'PagesController@customer');
 
 $router->post('test', function () {
 
