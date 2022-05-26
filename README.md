@@ -1,4 +1,4 @@
-# Babel
+# Tabel
 
 My Simple Framework inspired by laravel 
 
