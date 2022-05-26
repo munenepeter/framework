@@ -1,13 +1,18 @@
 {
-    "name": "babel/babel",
-    "description": "A simple online shop for accesories",
+    "name": "munenepeter/Babel",
+    "description": "A Simple Framework inspired by laravel ",
+    "type": "library",
+    "license": "MIT",
     "authors": [
         {
             "name": "munenepeter",
             "email": "munenenjega@gmail.com"
         }
     ],
-    "require": {},
+    "minimum-stability": "stable",
+    "require": {
+        "php": ">=8.0.0"
+      },
     "autoload": {
         "psr-4": {
             "Babel\\": "./"
