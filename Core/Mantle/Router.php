@@ -1,6 +1,6 @@
 <?php
 
-namespace Babel\Core\Mantle;
+namespace Tabel\Core\Mantle;
 
 class Router {
     public $routes = [
@@ -63,7 +63,7 @@ class Router {
     }
     protected function callAction($params, $controller, $action) {
 
-        $controller = "Babel\\Controllers\\{$controller}";
+        $controller = "Tabel\\Controllers\\{$controller}";
 
         if (!class_exists($controller)) {
             throw new \Exception("Class <b>$controller</b> doesn't not exist!", 500);

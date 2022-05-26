@@ -1,8 +1,8 @@
 <?php
 
-use Babel\Core\Mantle\App;
-use Babel\Core\Database\Connection;
-use Babel\Core\Database\QueryBuilder;
+use Tabel\Core\Mantle\App;
+use Tabel\Core\Database\Connection;
+use Tabel\Core\Database\QueryBuilder;
 
 define('ENV','development');
 define('APP_NAME', 'Babel');

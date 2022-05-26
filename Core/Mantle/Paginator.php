@@ -1,7 +1,7 @@
 <?php
-namespace Babel\Core\Mantle;
+namespace Tabel\Core\Mantle;
 
-use Babel\Core\Mantle\Request;
+use Tabel\Core\Mantle\Request;
 
 class Paginator{
     private static $per_page;

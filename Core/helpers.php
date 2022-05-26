@@ -1,7 +1,7 @@
 <?php
 
-use Babel\Core\Mantle\App;
-use Babel\Core\Mantle\Session;
+use Tabel\Core\Mantle\App;
+use Tabel\Core\Mantle\Session;
 
 /**
  * checkCreateView

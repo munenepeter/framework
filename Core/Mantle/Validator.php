@@ -1,8 +1,8 @@
 <?php
 
-namespace Babel\Core\Mantle;
+namespace Tabel\Core\Mantle;
 
-use Babel\Core\Mantle\App;
+use Tabel\Core\Mantle\App;
 
 class Validator {
 

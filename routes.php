@@ -1,6 +1,6 @@
 <?php
 
-use Babel\Core\Mantle\Validator;
+use Tabel\Core\Mantle\Validator;
 //get routes
 
 $router->get('index', 'PagesController@index');

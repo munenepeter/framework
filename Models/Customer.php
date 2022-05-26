@@ -1,6 +1,6 @@
 <?php
 
- namespace Babel\Models;
+ namespace Tabel\Models;
 
  class Customer extends Model{
 

@@ -1,10 +1,10 @@
 <?php
 
-namespace Babel\Core\Mantle;
+namespace Tabel\Core\Mantle;
 
-use Babel\Core\Mantle\App;
-use Babel\Core\Mantle\Request;
-use Babel\Core\Mantle\Session;
+use Tabel\Core\Mantle\App;
+use Tabel\Core\Mantle\Request;
+use Tabel\Core\Mantle\Session;
 
 class Auth {
     

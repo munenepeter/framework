@@ -1,9 +1,9 @@
 <?php
 
-namespace Babel\Controllers;
+namespace Tabel\Controllers;
 
-use Babel\Core\Mantle\Request;
-use Babel\Models\Customer;
+use Tabel\Core\Mantle\Request;
+use Tabel\Models\Customer;
 
 class ApiController {
 

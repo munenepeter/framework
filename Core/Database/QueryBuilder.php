@@ -1,8 +1,8 @@
 <?php
 
-namespace Babel\Core\Database;
+namespace Tabel\Core\Database;
 
-use Babel\Core\Mantle\Logger;
+use Tabel\Core\Mantle\Logger;
 
 
 /**
@@ -35,7 +35,7 @@ class QueryBuilder {
       Logger::log("ERROR: Something is up with your query { $sql } ");
     } 
   
-    $results = $statement->fetchAll(\PDO::FETCH_CLASS,  "Babel\\Models\\{$model}");
+    $results = $statement->fetchAll(\PDO::FETCH_CLASS,  "Tabel\\Models\\{$model}");
   
     if ($results == null || empty($results)) {
       Logger::log("Empty results for your query { $sql }");

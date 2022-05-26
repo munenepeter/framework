@@ -1,8 +1,8 @@
 <?php
 
-namespace Babel\Controllers;
+namespace Tabel\Controllers;
 
-use Babel\Models\Customer;
+use Tabel\Models\Customer;
 
 class PagesController {
     public function index() {

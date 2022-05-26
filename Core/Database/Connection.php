@@ -1,6 +1,6 @@
 <?php
 
-namespace Babel\Core\Database;
+namespace Tabel\Core\Database;
 
 class Connection{
     //make a connection to the DB

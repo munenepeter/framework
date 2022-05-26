@@ -1,6 +1,6 @@
 <?php
 
-use Babel\Models\Customer;
+use Tabel\Models\Customer;
 
 include_once 'base.view.php' ?>
 <?php

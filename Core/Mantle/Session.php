@@ -1,6 +1,6 @@
 <?php
 
-namespace Babel\Core\Mantle;
+namespace Tabel\Core\Mantle;
 
 class Session {
 
