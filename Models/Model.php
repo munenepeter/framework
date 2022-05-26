@@ -11,7 +11,11 @@ class Model {
         $model_name = new static;
         return $model_name;
     }
-
+    public function outputVars() {
+        foreach($this as $var => $value) {
+            echo "$var is $value\n";
+        }
+    }
     private static function tableName() {
 
         //get table name form the model

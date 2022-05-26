@@ -179,7 +179,7 @@ function singularize($word) {
     return $word;
 }
 
-function build_table($array) {
+function build_table_from_array($array) {
     // start table
     $html = "<table class=\"w-full text-sm text-left text-gray-500 dark:text-gray-400\">";
     // header row
@@ -206,6 +206,7 @@ function build_table($array) {
 
     return $html;
 }
+
 
 
 function startsWith($startString, $string) {
