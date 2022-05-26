@@ -67,17 +67,23 @@ class QueryBuilder {
   }
 
   public function selectAllWhere(string $table, int $value) {
-  
+
     $model = singularize(ucwords($table));
 
     $statement = $this->pdo->prepare("select * from {$table} where {$model}ID = $value");
 
     if (!$statement->execute()) {
 
-      throw new \Exception("Something is up with your Select {$statement}!");
+      throw new \Exception("Something is up with your Select {$statement}!", 500);
     }
-    
-    return $statement->fetchAll(\PDO::FETCH_CLASS,  "Babel\\Models\\{$model}");
+    $results = $statement->fetchAll(\PDO::FETCH_CLASS,  "Babel\\Models\\{$model}");
+
+    if (empty($results)) {
+
+      throw new \Exception("There is no results for your query!", 404);
+      Logger::log("INFO: There is no results for {$statement} ");
+    }
+    return  $results;
   }
 
   /**
@@ -134,8 +140,8 @@ class QueryBuilder {
       die();
     }
   }
-   //Albtatry Query FROM table_name WHERE condition;
-   public function query(string $sql) {
+  //Albtatry Query FROM table_name WHERE condition;
+  public function query(string $sql) {
     try {
 
       $statement = $this->pdo->prepare($sql);
@@ -144,7 +150,7 @@ class QueryBuilder {
       return $statement->fetchAll(\PDO::FETCH_ASSOC);
     } catch (\Exception $e) {
 
-      Logger::log("ERROR: Something is up with your Query -> $sql, " .$e->getMessage());
+      Logger::log("ERROR: Something is up with your Query -> $sql, " . $e->getMessage());
 
       throw new \Exception('Something is up with your Query!' . $e->getMessage());
       die();
