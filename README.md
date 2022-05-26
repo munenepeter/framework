@@ -2,6 +2,11 @@
 
 My Simple Framework inspired by laravel 
 
+
+## Installing
+```
+composer require tabel/tabel
+```
 ## Development
 
 Want to contribute? Great!
