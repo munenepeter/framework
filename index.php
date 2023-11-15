@@ -1,7 +1,7 @@
 <?php
 
-use Tabel\Core\Mantle\Router;
-use Tabel\Core\Mantle\Request;
+use Chungu\Core\Mantle\Router;
+use Chungu\Core\Mantle\Request;
 
 //require the main file joining all the parts of the app
 require 'Core/bootstrap.php';

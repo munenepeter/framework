@@ -1,7 +1,6 @@
 # Tabel
 
-My Simple Framework inspired by laravel 
-
+My Simple Framework
 
 ## Installation
 ```

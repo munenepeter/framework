@@ -1,21 +1,16 @@
 {
-    "name": "tabel/tabel",
-    "description": "A Simple Framework inspired by laravel ",
-    "type": "library",
-    "license": "MIT",
+    "name": "banktrans/banktrans",
+    "description": "A simple banking system concept",
     "authors": [
         {
             "name": "munenepeter",
             "email": "munenenjega@gmail.com"
         }
     ],
-    "minimum-stability": "stable",
-    "require": {
-        "php": ">=8.0.0"
-      },
+    "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Tabel\\": "./"
+            "Chungu\\": "./"
         }
     }
 }
