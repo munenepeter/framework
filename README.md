@@ -4,7 +4,7 @@ My Simple Framework
 
 ## Installation
 ```
-composer require tabel/tabel
+composer create-project tabel/tabel <path-to-your-app>
 ```
 ## Development
 
