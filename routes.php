@@ -1,7 +1,6 @@
 <?php
-//get routes edited to test workflow
 
-use Chungu\Core\Mantle\Router;
+use Tabel\Core\Mantle\Router;
 
 $router->get('', 'PagesController@index');
 
@@ -14,6 +13,3 @@ $router->post(':system:/logs/delete', 'SystemController@deleteLogs');
 $router->get('robots.txt', function () {
     return require __DIR__ . "/robots.txt";
 });
-
-
-$router->resource('admin', TestController::class);

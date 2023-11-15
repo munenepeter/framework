@@ -1,6 +1,6 @@
 {
-    "name": "banktrans/banktrans",
-    "description": "A simple banking system concept",
+    "name": "tabel/tabel",
+    "description": "A simple simple custom framework",
     "authors": [
         {
             "name": "munenepeter",
@@ -10,7 +10,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Chungu\\": "./"
+            "Tabel\\": "./"
         }
     }
 }
