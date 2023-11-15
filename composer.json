@@ -7,6 +7,10 @@
             "email": "munenenjega@gmail.com"
         }
     ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=8.1.0"
+    },
     "license": "MIT",
     "autoload": {
         "psr-4": {
