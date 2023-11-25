@@ -354,7 +354,9 @@ function logger(string $level, string $message) {
 function request(string $key) {
     return htmlspecialchars(trim($_REQUEST[$key])) ?? NULL;
 }
-
+function session_get($value) {
+    return Session::get($value);
+}
 function is_dev() {
     if (ENV === 'development') {
         return true;
