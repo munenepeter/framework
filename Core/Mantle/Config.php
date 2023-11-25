@@ -3,47 +3,53 @@
 namespace Tabel\Core\Mantle;
 
 use Tabel\Core\Mantle\Cache;
+use Tabel\Core\Mantle\Logger;
 
 class Config {
-    protected static $env_file = APP_ROOT.'.env';
+    protected static $env_file = APP_ROOT . '.env';
     protected static $cache_key = 'config_cache';
+    protected static $config = [];
 
 
-    public static function load(): array{
-        // Check if cached config exists
+    public static function load(): array {
+        // Check if cached config exists or if the env file was modified
         $cachedConfig = Cache::get(self::$cache_key);
-        if ($cachedConfig !== null) {
+
+        if ($cachedConfig !== null && self::hasEnvFileChanged($cachedConfig)) {
+            Cache::forget(self::$cache_key);
             return $cachedConfig;
         }
 
         // If not, load and parse the configuration file
         $config = self::parseFile();
+        $config['hash'] = hash_file('sha256', self::$env_file);
 
-        // Cache the config for future use
         Cache::put(self::$cache_key, $config);
 
         return $config;
     }
 
-    private static function checkEnvFile(){
+
+
+    private static function checkEnvFile() {
         //check if the file exists & is readable
-        if(!is_readable(self::$env_file)){
-            Logger::Debug("Config: Seems like the env file at ". self::$env_file." is missing");
-            Logger::Info("Config: Attempting to copy from the deafult .env.example....");
+        if (!is_readable(self::$env_file)) {
+            Logger::Debug("Config: Seems like the env file at " . self::$env_file . " is missing");
+            Logger::Info("Config: Attempting to copy from the default .env.example....");
             //if not available, copy the ENV.EXAMPLE
-            if(!copy(from: APP_ROOT.'.env.example', to: self::$env_file)){
+            if (!copy(from: APP_ROOT . '.env.example', to: self::$env_file)) {
                 Logger::Error("Config: Can't copy the env.example, is it missing?");
                 return false;
-            } 
+            }
         }
         return true;
     }
 
-    protected static function parseFile(){
+    protected static function parseFile() {
 
         $config = [];
 
-        if(!self::checkEnvFile()){
+        if (!self::checkEnvFile()) {
             throw new \Exception("Error Processing ENV file", 500);
         }
 
@@ -78,7 +84,7 @@ class Config {
         return preg_replace_callback(
             '/\${(.*?)}/',
             function ($matches) use ($config) {
-                $variablePath = strtolower($matches[1]); 
+                $variablePath = strtolower($matches[1]);
                 $variablePathParts = explode('_', $variablePath);
 
                 $currentValue = $config;
@@ -88,7 +94,7 @@ class Config {
                     if (isset($currentValue[$part])) {
                         $currentValue = $currentValue[$part];
                     } else {
-                        return ''; 
+                        return '';
                     }
                 }
 
@@ -96,5 +102,19 @@ class Config {
             },
             $value
         );
+    }
+    public static function hasEnvFileChanged($config): bool {
+        if ($config === null) {
+            Logger::Info("Config: Caching ENV file...");
+            return true;
+        }
+        $current_env_hash = hash_file('sha256', self::$env_file);
+        $previous_env_hash = $config['hash'];
+
+        if ($current_env_hash !== $previous_env_hash) {
+            Logger::Info("Config: ENV file has been modified, refreshing the config cache");
+            return true;
+        }
+        return false;
     }
 }
