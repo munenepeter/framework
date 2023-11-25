@@ -8,42 +8,40 @@ use Tabel\Core\Mantle\Session;
 
 class Auth {
 
-    public static function login(String $username, String $password) {
+    public static function login(string $email, string $password) {
 
-        $password = md5($password);
-
-        $user =  User::query("select id, username, email, role, password  from users where username = \"$username\"");
-
-        //$user = User::where(['username', 'password'], ['username', $username]);
-        if (empty($user)) {
-            Logger::Info("Login: No account with {$username} username");
-            echo json_encode("There is no user with {$username}");
-            return;
+        $user = User::findBy('email', $email);
+      
+        if (!$user) {
+            logger("Info", "Login: No account with {$email} email with {$password}");
+            Session::make('_msg_error', "Wrong credentials, Please try again!");
+            return false;
         }
-        $user = (object)$user[0];
 
-        if ($password === $user->password) {
-            Logger::Info("Login: Logged in {$username}");
+        $user = $user[0];
 
-            Session::make('loggedIn', true);
-            Session::make('user_id', $user->id);
-            Session::make('user', $user->username);
-            Session::make('email', $user->email);
-            Session::make('role', $user->role);
-            //Todo Implement Session tokens  
-           
-            echo json_encode("logged_in"); 
-            return;
-        } else {
-            Logger::Info("Login: Wrong Credentials");
-            echo json_encode("Wrong credentials, Please try again!");
-            return;
+        if (!password_verify($password, $user->password)) {
+            logger("Info", "Login: Wrong Credentials; Email: {$email} Password: {$password}");
+            Session::make('_msg_error', "Wrong credentials, Please try again!");
+            return false;
         }
+
+        logger("Info", "Login: Logged in {$email} with " . password_hash($password, PASSWORD_DEFAULT));
+
+        Session::make('loggedIn', true);
+        Session::make('user_id', $user->id);
+        Session::make('email', $user->email);
+
+        Session::make('_msg_success', "Successfull login");
+
+        return true;
     }
-    public static function logout(String $user) {
-        logger("Info","Login: logged out $user");
+    public static function logout(string $user) {
+
         Session::unset($user);
         Session::make('loggedIn', false);
+
+        logger("Info", "Login: logged out $user");
         Session::destroy();
     }
 }
