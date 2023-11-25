@@ -18,9 +18,9 @@ class Mail {
         $this->host = $config['host'];
         $this->username = $config['username'];
         $this->password = $config['password'];
-        $this->isSMTP = $config['isSMTP'];
-        $this->SMTPAuth = $config['SMTPAuth'];
-        $this->SMTPSecure = $config['SMTPSecure'];
+        $this->isSMTP = $config['smtp'];
+        $this->SMTPAuth = $config['smtp_auth'];
+        $this->SMTPSecure = $config['smtp_secure'];
         $this->port = $config['port'];
 
        /// $this->mailer = new PHPMailer(true);
