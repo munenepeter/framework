@@ -116,35 +116,9 @@ function wp_strip_all_tags($string, $remove_breaks = false) {
     return trim($string);
 }
 
-function lilog(string $msg) {
-
-    $msg = "On " . date('Y-m-d H:i:s', time()) . " " . $msg . PHP_EOL;
-    $logFile =  __DIR__ . "/../static/files/li.log";
-
-    $file = fopen($logFile, 'a+', 1);
-    fwrite($file, $msg);
-    fclose($file);
-}
-function getLogs() {
-    $log = "static/files/li.log";
-
-    if (!file_exists($log)) {
-        echo "File Does not exist, call the developer!";
-        exit;
-    }
-    $data = file_get_contents($log);
-
-    $logs = explode(PHP_EOL, $data);
-
-    array_pop($logs);
-
-    return array_reverse($logs);
-}
-
 function getRandColor() {
     $rgbColor = [];
     foreach (['r', 'g', 'b'] as $color) {
-        //Generate a random number between 0 and 255.
         $rgbColor[$color] = mt_rand(0, 255);
     }
     $colorCode = implode(",", $rgbColor);
@@ -155,12 +129,12 @@ function getRandColor() {
  * 
  * Subtracts a number of days from a date
  * 
- * @param  string $days_to_subtract no of days to subtract
+ * @param int $days_to_subtract no of days to subtract
  * 
  * @return string the date after subtracting
  */
 
-function subtract_date($days_to_subtract) {
+function subtract_date(int $days_to_subtract) {
     $date = date_create(date('Y-m-d H:i:s', time()));
     date_sub($date, date_interval_create_from_date_string("2 days"));
     return date_format($date, 'Y-m-d H:i:s');
@@ -170,13 +144,6 @@ function slug($string) {
     return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string)));
 }
 
-
-function isAdmin() {
-    if (auth() && auth()->role === 'admin') {
-        return true;
-    }
-    return false;
-}
 /**
  * Auth Helper
  * 
@@ -195,7 +162,6 @@ function auth() {
 
         public $username;
         public $email;
-        public $role;
         public $id;
 
         public function __construct() {
@@ -203,7 +169,6 @@ function auth() {
             $this->username = Session::get('user') ?? null;
             $this->email = Session::get('email') ?? null;
             $this->id = Session::get('user_id') ?? null;
-            $this->role = Session::get('role') ?? null;
         }
         public function __get($name) {
             return $name;
@@ -257,14 +222,7 @@ function delete_file(string $path) {
     }
 }
 
-function is_in_Session($key, $session) {
-    if (!isset($_SESSION[$session])) {
-        return false;
-    }
-    return in_array($key, Session::get($session));
-}
 function downloadFile($dir, $file) {
-
     if (file_exists($file . "uuj")) {
         header('Content-Description: File Transfer');
         header('Content-Type: application/octet-stream');
@@ -335,11 +293,6 @@ function url() {
     }
 }
 
-function notify($message) {
-    echo '<script type="text/javascript">',
-    "notify('$message');",
-    '</script>';
-}
 function format_date($date) {
     return date("jS M Y ", strtotime($date));
 }
@@ -401,21 +354,6 @@ function logger(string $level, string $message) {
 function request(string $key) {
     return htmlspecialchars(trim($_REQUEST[$key])) ?? NULL;
 }
-
-function get_notifications() {
-    if (empty(Session::get("notifications"))) {
-        return [];
-    }
-    return Session::get("notifications");
-}
-function delete_notifications() {
-    return Session::unset("notifications");
-}
-function session_get($value) {
-    return Session::get($value);
-}
-
-
 
 function is_dev() {
     if (ENV === 'development') {
@@ -495,7 +433,7 @@ function singularize($word) {
 
     return $word;
 }
-function truncate($text, $limit) {
+function truncate(string $text, int $limit) {
     return mb_strlen($text, 'UTF-8') > $limit ? mb_substr($text, 0, $limit, 'UTF-8') . "…" : $text;
 }
 
