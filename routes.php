@@ -1,15 +1,15 @@
 <?php
 
 use Tabel\Core\Mantle\Router;
+use Tabel\Controllers\SystemController;
 
-$router->get('', 'PagesController@index');
-
-
+Router::get('', 'PagesController@index');
 
 //logs
-$router->get(':system:/logs', 'SystemController@index');
-$router->post(':system:/logs/delete', 'SystemController@deleteLogs');
+Router::get(':system:/logs', [SystemController::class, 'index']);
+Router::post(':system:/logs/delete', [SystemController::class, 'deleteLogs']);
+
 //robots
-$router->get('robots.txt', function () {
+Router::get('robots.txt', function () {
     return require __DIR__ . "/robots.txt";
 });
