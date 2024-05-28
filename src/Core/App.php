@@ -78,8 +78,6 @@ class App {
     }
 
     public  function create(): self {
-        require_once __DIR__ . '/../helpers.php';
-
         try {
             Router::load($this->get('web-routes'))->direct(Request::uri(), Request::method());
         } catch (\Exception $e) {
