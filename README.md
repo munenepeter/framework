@@ -1,6 +1,6 @@
 # Tabel
 
-My Simple Framework
+My Simple Framework - this is for simple projects where i do not need the all the parts offered by Laravel
 
 ## Installation
 ```
@@ -14,9 +14,4 @@ Just fork or clone the repo
 
 ## License
 
-You can do as you please
-
 MIT
-
-**Free Software, Hell Yeah!**
-
