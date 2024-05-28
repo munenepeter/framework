@@ -459,11 +459,6 @@ function truncate(string $text, int $limit) {
 }
 
 
-function class_basename($class) {
-    $class = is_object($class) ? get_class($class) : $class;
-    return basename(str_replace('\\', '/', $class));
-}
-
 function build_table($array) {
     // start table
     $html = "<table class=\"w-full text-sm text-left text-gray-500 dark:text-gray-400\">";
