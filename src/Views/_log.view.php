@@ -1,10 +1,22 @@
 <?php
-include_once 'base.view.php';
-include_once 'sections/nav.view.php';
-
 $all = implode(",", $logs);
 ?>
-<div class="bg-gray-100 mt-12 rounded-md">
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="<?php asset("imgs/favicon/error-favicon.svg") ?>" type="image/svg">
+    <link rel="stylesheet" href="<?php asset("css/main.css") ?>">
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <title>System Logs</title>
+</head>
+<div class="bg-purple-100 rounded-md">
 
     <!-- btns & search -->
     <div class="w-full p-4">
@@ -42,7 +54,7 @@ $all = implode(",", $logs);
                 </form>
             </div>
         </div>
-        <div class="overflow-y-auto relative shadow-md sm:rounded-lg" style="height: 505px ;">
+        <div class="overflow-y-auto relative shadow-md sm:rounded-lg" style="height: 555px ;">
             <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400 " x-data="{selected:null}">
                 <thead class=" sticky top-0 text-xs text-gray-700  bg-gray-50 ">
                     <tr>
@@ -101,7 +113,7 @@ $all = implode(",", $logs);
                                 <?= $log->time; ?>
                             </td>
                             <td class="py-3 px-6">
-                                <?= ENV; ?>
+                                <?= app()->get('config')['app']['env']; ?>
                             </td>
                             <td class="py-3 px-2 md:px-6">
                                 <?php
@@ -163,7 +175,7 @@ $all = implode(",", $logs);
 <script>
     const form = document.getElementById('_delete_logs')
     const submitBtn = document.getElementById('submitBtn');
-    const url = '/:system:/logs/delete';
+    const url = '/system/logs/delete';
 
     form.addEventListener('submit', function(event) {
         event.preventDefault();
