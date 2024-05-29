@@ -93,7 +93,7 @@ function abort($message, $code) {
 }
 function view_internal(string $filename, array $data = []) {
     extract($data);
-    $filename = __DIR__."/Views/{$filename}.view.php";
+    $filename = __DIR__."/src/Views/{$filename}.view.php";
 
     checkView($filename);
 
