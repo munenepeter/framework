@@ -95,7 +95,7 @@ class Router {
             return Router::$routes[$requestType][$regexUri](...$params);
         }
         if (!array_key_exists($uri, Router::$routes[$requestType])) {
-            throw new \Exception("Oops, you forgot to include <b>" . strtoupper($requestType) . " /{$uri}</b>, There is no such route! ", 404);
+            throw new \Exception("There is no handler for <b>" . strtoupper($requestType) . " /{$uri}</b> ", 404);
         }
         if (is_array(Router::$routes[$requestType][$regexUri])) {
             return $this->callAction(
@@ -126,7 +126,7 @@ class Router {
     protected function callAction(array $params, string $controller, string $action): mixed {
 
         if (strpos($controller, "\\") === false) {
-            $controller = "CaseLaw\\Controllers\\{$controller}";
+            $controller = "Tabel\\Controllers\\{$controller}";
         }
 
         if (!class_exists($controller)) {
