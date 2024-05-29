@@ -6,10 +6,7 @@ use Tabel\Core\Router;
 use Tabel\Core\Request;
 use Tabel\Core\Mantle\Middleware;
 
-
-
 class App {
-
     protected $container = [];
 
     public $path = '';
@@ -30,10 +27,10 @@ class App {
     }
 
     public function get($key) {
-        if (!array_key_exists($key, $this->container)) {
-            throw new \Exception("The key '{$key}' was not found in the container", 500);
-        }
-        return $this->container[$key];
+        // if (!array_key_exists($key, $this->container)) {
+        //     throw new \Exception("The key '{$key}' was not found in the container", 500);
+        // }
+        return array_get($this->container, $key);
     }
 
     public function configure(): self {
@@ -69,11 +66,11 @@ class App {
         return $this;
     }
     public function withMiddleware(callable $middleware): self {
-        # code...
+         # TODO
         return $this;
     }
     public function withExceptions(callable $middleware): self {
-        # code...
+        # TODO
         return $this;
     }
 
