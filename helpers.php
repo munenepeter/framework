@@ -103,10 +103,6 @@ function app(): App {
     return App::getInstance(getcwd());
 }
 
-function get_public_path() : string {
-
-    return '';
-}
 
 function redirectback($data = []) {
     extract($data);
@@ -155,7 +151,7 @@ function getRandColor() {
 
 function subtract_date(int $days_to_subtract) {
     $date = date_create(date('Y-m-d H:i:s', time()));
-    date_sub($date, date_interval_create_from_date_string("2 days"));
+    date_sub($date, date_interval_create_from_date_string("$days_to_subtract days"));
     return date_format($date, 'Y-m-d H:i:s');
 }
 
@@ -377,9 +373,9 @@ function session_get($value) {
     return Session::get($value);
 }
 function is_dev() {
-    if (app()->get('config')['app']['env'] === 'development') {
+    if (app()->get('config.app.env') === 'development') {
         return true;
-    } elseif (app()->get('config')['app']['env'] === 'production') {
+    } elseif (app()->get('config.app.env') === 'production') {
         return false;
     }
 }
@@ -485,4 +481,71 @@ function build_table($array) {
     $html .= '</table>';
 
     return $html;
+}
+
+
+if (!function_exists('collapse')) {
+    function collapse($array) {
+        $results = [];
+
+        foreach ($array as $values) {
+            if (!is_array($values)) {
+                continue;
+            }
+
+            $results[] = $values;
+        }
+
+        return array_merge([], ...$results);
+    }
+}
+
+if (!function_exists('array_get')) {
+    function array_get($target, $key, $default = null) {
+        if (is_null($key)) {
+            return $target;
+        }
+
+        $key = is_array($key) ? $key : explode('.', $key);
+
+        foreach ($key as $i => $segment) {
+            unset($key[$i]);
+
+            if (is_null($segment)) {
+                return $target;
+            }
+
+            if ($segment === '*') {
+                if (!is_iterable($target)) {
+                    return value($default);
+                }
+
+                $result = [];
+
+                foreach ($target as $item) {
+                    $result[] = data_get($item, $key);
+                }
+
+                return in_array('*', $key) ? collapse($result) : $result;
+            }
+
+            $segment = match ($segment) {
+                '\*' => '*',
+                '\{first}' => '{first}',
+                '{first}' => array_key_first(is_array($target) ? $target : $segment),
+                '\{last}' => '{last}',
+                '{last}' => array_key_last(is_array($target) ? $target : $segment),
+                default => $segment,
+            };
+            if (is_array($target)  && array_key_exists($segment, $target)) {
+                $target = $target[$segment];
+            } elseif (is_object($target) && isset($target->{$segment})) {
+                $target = $target->{$segment};
+            } else {
+                return $default;
+            }
+        }
+
+        return $target;
+    }
 }
