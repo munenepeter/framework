@@ -113,7 +113,7 @@ $all = implode(",", $logs);
                                 <?= $log->time; ?>
                             </td>
                             <td class="py-3 px-6">
-                                <?= app()->get('config')['app']['env']; ?>
+                                <?= app()->get('config.app.env'); ?>
                             </td>
                             <td class="py-3 px-2 md:px-6">
                                 <?php
