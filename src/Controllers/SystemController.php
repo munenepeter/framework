@@ -2,7 +2,7 @@
 
 namespace Tabel\Controllers;
 
-use Tabel\Core\Modules\Logger;
+use Tabel\Modules\Logger;
 use Tabel\Controllers\MainController;
 
 class SystemController extends MainController {
@@ -11,7 +11,7 @@ class SystemController extends MainController {
         //   $this->middleware('auth');
     }
     public function index() {
-        return view('_log', [
+        return view_internal('_log', [
             'logs' => Logger::getLogs(),
         ]);
     }
@@ -20,7 +20,7 @@ class SystemController extends MainController {
         $this->json("Deleting Logs...");
         if (request('_delete_logs') !== md5(session_get('email'))) {
             logger("Warning", "System: Someone is trying to force delete logs" . session_get('email'));
-            return redirect(':system:/logs');
+            return redirect('system/logs');
         }
         $this->actuallyDeleteLogs();
     }
