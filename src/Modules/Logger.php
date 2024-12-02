@@ -13,7 +13,13 @@ class Logger {
     public static $logFile = APP_ROOT . "/storage/logs/tabel.log";
 
     public static function log(string $level, string $msg) {
-        $userinfo = self::getUserInfo();
+
+        if (Request::isCli()) {
+            $userinfo = null;
+        } else {
+            $userinfo = self::getUserInfo();
+        }
+
         $log = [
             'id' => md5(time()),
             'level' => $level,
@@ -21,13 +27,13 @@ class Logger {
             "more" => [
                 "method" => Request::method(),
                 "uri" => '/' . Request::uri(),
-                "remote_addr" => $_SERVER['REMOTE_ADDR'],
+                "remote_addr" => $_SERVER['REMOTE_ADDR'] ?? "N/A",
                 "region" => $userinfo->region_name ?? "N/A",
                 "country" => $userinfo->country_name ?? "N/A",
                 "city" => $userinfo->city ?? "N/A",
                 "provider" => $userinfo->organisation ?? "N/A",
                 "time_zone" => $userinfo->time_zone ?? "N/A",
-                "agent" => $_SERVER['HTTP_USER_AGENT']
+                "agent" => $_SERVER['HTTP_USER_AGENT'] ?? "N/A"
             ],
             "description" => nl2br($msg)
         ];

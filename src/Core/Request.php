@@ -135,7 +135,12 @@ class Request {
      * @return mixed
      */
     public function get(string $key, mixed $default = null): mixed {
-        return isset($_GET[$key]) ? $this->sanitize($_GET[$key]) : $default;
+        if (self::isCli()) {
+            global $argv;
+            // Parse CLI arguments if needed
+            return $default;
+        }
+        return $_REQUEST[$key] ?? $default;
     }
 
     /**
@@ -155,7 +160,13 @@ class Request {
      * @return string
      */
     public static function uri(): string {
-        return trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+        if (self::isCli()) {
+            return 'cli';
+        }
+        
+        return trim(
+            parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'
+        );
     }
 
     /**
@@ -164,7 +175,7 @@ class Request {
      * @return string
      */
     public static function method(): string {
-        return strtoupper($_SERVER['REQUEST_METHOD']);
+        return self::isCli() ? 'CLI' : $_SERVER['REQUEST_METHOD'];
     }
 
     /**
@@ -316,5 +327,14 @@ class Request {
     public function isSecure(): bool {
         return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || $_SERVER['SERVER_PORT'] == 443;
+    }
+
+    /**
+     * Check if the current script is running in CLI mode
+     * 
+     * @return bool
+     */
+    public static function isCli(): bool {
+        return php_sapi_name() === 'cli';
     }
 }
