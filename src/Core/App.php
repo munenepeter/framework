@@ -4,8 +4,6 @@ namespace Tabel\Core;
 
 use Tabel\Core\Router;
 use Tabel\Core\Request;
-use Tabel\Core\Mantle\Middleware;
-
 class App {
     protected $container = [];
 
