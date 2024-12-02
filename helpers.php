@@ -7,11 +7,13 @@ use Tabel\Modules\Logger;
 use Tabel\Modules\Session;
 
 
-define("BASE_URL",  sprintf(
-    "%s://%s",
-    isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
-    $_SERVER['SERVER_NAME']
-));
+if (!defined('BASE_URL')) {
+    define("BASE_URL", Request::isCli() ? '' : sprintf(
+        "%s://%s",
+        isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
+        $_SERVER['SERVER_NAME'] ?? 'localhost'
+    ));
+}
 
 
 /**
@@ -42,7 +44,7 @@ function checkView(string $filename) {
  */
 function view(string $filename, array $data = []) {
     extract($data);
-    $filename = app()->get('app-path') . "/views/{$filename}.view.php";
+    $filename = app()->get('app-path'). "/views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -87,7 +89,7 @@ function abort($message, $code) {
 }
 function view_internal(string $filename, array $data = []) {
     extract($data);
-    $filename = __DIR__ . "/src/Views/{$filename}.view.php";
+    $filename = __DIR__."/src/Views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -263,6 +265,10 @@ function downloadFile($dir, $file) {
 function dd($var) {
     //to do
     // debug_print_backtrace();
+    if(php_sapi_name() === 'cli') {
+        var_dump($var);
+        die();
+    }
 
     ini_set("highlight.keyword", "#a50000;  font-weight: bolder");
     ini_set("highlight.string", "#5825b6; font-weight: lighter; ");
@@ -284,20 +290,24 @@ function dd($var) {
  * from https://stackoverflow.com/questions/2820723/how-do-i-get-the-base-url-with-php
  */
 function url() {
+    if (Request::isCli()) {
+        return '';
+    }
+    
     if (!is_dev()) {
         return sprintf(
             "%s://%s%s",
             isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
-            $_SERVER['SERVER_NAME'],
-            $_SERVER['REQUEST_URI']
+            $_SERVER['SERVER_NAME'] ?? 'localhost',
+            $_SERVER['REQUEST_URI'] ?? '/'
         );
     } else {
         return sprintf(
             "%s://%s:%s%s",
             isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != 'off' ? 'https' : 'http',
-            $_SERVER['SERVER_NAME'],
-            $_SERVER['SERVER_PORT'],
-            $_SERVER['REQUEST_URI']
+            $_SERVER['SERVER_NAME'] ?? 'localhost',
+            $_SERVER['SERVER_PORT'] ?? '80',
+            $_SERVER['REQUEST_URI'] ?? '/'
         );
     }
 }
@@ -342,8 +352,12 @@ function time_ago($datetime, $full = false) {
  * @return void  echo Path to the requested resource
  */
 function asset($path) {
+    if (Request::isCli()) {
+        return "/public/$path";
+    }
+    
     if (is_dev()) {
-        echo BASE_URL . ":" . $_SERVER['SERVER_PORT'] . "/public/$path";
+        echo BASE_URL . ":" . ($_SERVER['SERVER_PORT'] ?? '80') . "/public/$path";
     } else {
         echo BASE_URL . "/public/$path";
     }
@@ -360,12 +374,17 @@ function logger(string $level, string $message) {
     Logger::log($level, $message);
 }
 
-function request(string $key) {
+function request(string $key, $default = null) {
+    if (Request::isCli()) {
+        global $argv;
+        // Parse CLI arguments if needed
+        return $default;
+    }
+    
     if (isset($_REQUEST[$key])) {
         return htmlspecialchars(trim($_REQUEST[$key]));
-    } else {
-        throw new \Exception("Request key '{$key}' not found");
     }
+    return $default;
 }
 function session_get($value) {
     return Session::get($value);
