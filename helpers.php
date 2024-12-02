@@ -26,19 +26,8 @@ define("BASE_URL",  sprintf(
 function checkView(string $filename) {
     if (!file_exists($filename)) {
         logger("Error", "The view for {$filename} appears to be missing");
-        throw new \Exception("The requested page cannot be found", 404);
+        throw new \Exception("The requested view file '{$filename}' cannot be found", 404);
     }
-
-    /*
-        fopen("$filename", 'a');
-
-        $data = "<?php include_once 'base.view.php';?><div class=\"grid place-items-center h-screen\">
-       Created {$filename}'s view; please edit</div>";
-
-        file_put_contents($filename, $data);
-
-        fclose($filename)
-        */
 }
 
 /**
@@ -53,7 +42,7 @@ function checkView(string $filename) {
  */
 function view(string $filename, array $data = []) {
     extract($data);
-    $filename = app()->get('app-path'). "/views/{$filename}.view.php";
+    $filename = app()->get('app-path') . "/views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -68,7 +57,12 @@ function view(string $filename, array $data = []) {
  * @param string $path Page to be redirected to
  */
 function redirect(string $path) {
-    header("location:{$path}");
+    if (!headers_sent()) {
+        header("Location: {$path}");
+        exit;
+    } else {
+        throw new \Exception("Cannot redirect, headers already sent");
+    }
 }
 /**
  * Abort
@@ -93,7 +87,7 @@ function abort($message, $code) {
 }
 function view_internal(string $filename, array $data = []) {
     extract($data);
-    $filename = __DIR__."/src/Views/{$filename}.view.php";
+    $filename = __DIR__ . "/src/Views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -172,7 +166,6 @@ function auth() {
         return false;
     }
 
-    Session::get('loggedIn');
     $class = new class {
 
         public $username;
@@ -180,10 +173,10 @@ function auth() {
         public $id;
 
         public function __construct() {
-
-            $this->username = Session::get('user') ?? null;
-            $this->email = Session::get('email') ?? null;
-            $this->id = Session::get('user_id') ?? null;
+            $user = Auth::user();
+            $this->username = $user->username ?? null;
+            $this->email = $user->email ?? null;
+            $this->id =  $user->id ?? null;
         }
         public function __get($name) {
             return $name;
@@ -191,8 +184,8 @@ function auth() {
         public function __set($name, $value) {
             $this->$name = $value;
         }
-        public function logout($user) {
-            Auth::logout($user);
+        public function logout() {
+            Auth::logout(Auth::user());
             redirect('/');
         }
     };
@@ -238,20 +231,21 @@ function delete_file(string $path) {
 }
 
 function downloadFile($dir, $file) {
-    if (file_exists($file . "uuj")) {
+    $filePath = $dir . $file;
+    if (file_exists($filePath)) {
         header('Content-Description: File Transfer');
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . basename($file) . '"');
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
-        header('Content-Length: ' . filesize($file));
+        header('Content-Length: ' . filesize($filePath));
         flush(); // Flush system output buffer
-        readfile($dir . $file);
-        die();
+        readfile($filePath);
+        exit;
     } else {
         http_response_code(404);
-        die();
+        throw new \Exception("File '{$file}' not found for download");
     }
 }
 
@@ -367,7 +361,11 @@ function logger(string $level, string $message) {
 }
 
 function request(string $key) {
-    return htmlspecialchars(trim($_REQUEST[$key])) ?? NULL;
+    if (isset($_REQUEST[$key])) {
+        return htmlspecialchars(trim($_REQUEST[$key]));
+    } else {
+        throw new \Exception("Request key '{$key}' not found");
+    }
 }
 function session_get($value) {
     return Session::get($value);
@@ -462,7 +460,7 @@ function build_table($array) {
     $html .= "<thead class=\"sticky top-0  text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400\">";
     $html .= '<tr>';
     foreach ($array[0] as $key => $value) {
-        $html .= '<th  scope="col" class="sticky top-0  px-6 py-3" >' . htmlspecialchars($key) . '</th>';
+        $html .= '<th  scope="col" class="sticky top-0 px-6 py-3" >' . htmlspecialchars($key) . '</th>';
     }
     $html .= '</tr>';
     $html .= "</thead>";

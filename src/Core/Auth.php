@@ -2,7 +2,7 @@
 
 namespace Tabel\Core;
 
-use CaseLaw\Models\User;
+use App\Models\User;
 use Tabel\Modules\Session;
 
 class Auth {
@@ -47,7 +47,6 @@ class Auth {
             
             logger("Info", "Successful login for {$email}");
             Session::make('_msg_success', "Login successful");
-            
             return true;
 
         } catch (\Exception $e) {
@@ -60,16 +59,21 @@ class Auth {
     /**
      * Log out the current user
      * 
-     * @param string $user Username/email
+     * @return User|null
      * @return void
      */
-    public static function logout(string $user): void {
+    public static function logout(User $user): void {
         try {
-            Session::unset($user);
+            // Clear session data
             Session::make('loggedIn', false);
+            Session::make('user_id', $user->id);
+            Session::make('email', $user->email);
+            Session::make('last_activity', null);
+
             logger("Info", "User logged out: $user");
             Session::destroy();
         } catch (\Exception $e) {
+            Session::make('_msg_error', "An error occurred during logout");
             logger("Error", "Logout error: " . $e->getMessage());
         }
     }
