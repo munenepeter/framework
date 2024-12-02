@@ -28,8 +28,8 @@ class SystemController extends MainController {
     public function actuallyDeleteLogs() {
 
         if (!Logger::deleteLogs(session_get('email'))) {
-            $this->json("Unable to delete", 500);
+            $this->error("Unable to delete", 500);
         }
-        $this->json("Logs Deleted");
+        $this->success(null,"Logs Deleted");
     }
 }
