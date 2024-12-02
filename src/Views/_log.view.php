@@ -16,6 +16,7 @@ $all = implode(",", $logs);
 
     <title>System Logs</title>
 </head>
+
 <body class="bg-gray-100 min-h-screen p-4 font-['Inter']" x-data="{ activeFilter: 'all', selectedRow: null }">
     <div class="max-w-[95%] mx-auto">
         <div class="mb-4">
@@ -28,41 +29,41 @@ $all = implode(",", $logs);
         </div>
 
         <h1 class="mb-6 text-2xl font-bold text-gray-800">System Logs</h1>
-        
+
         <div class="overflow-hidden bg-white border border-gray-200 rounded-lg shadow-sm">
             <div class="p-4 border-b border-gray-200">
                 <div class="flex flex-col gap-4 md:flex-row md:items-center">
                     <div class="grid grid-cols-2 gap-2 md:flex">
-                        <button 
-                            @click="activeFilter = 'all'" 
+                        <button
+                            @click="activeFilter = 'all'"
                             :class="{ 'ring-2 ring-gray-400': activeFilter === 'all' }"
                             class="inline-flex items-center px-4 py-2 text-gray-700 transition-colors bg-gray-100 rounded hover:bg-gray-200">
                             <span class="font-medium">All</span>
                             <span class="ml-2 px-2 py-0.5 text-xs bg-gray-200 rounded"><?= substr_count($all, 'Debug') + substr_count($all, 'Info') + substr_count($all, 'Error') + substr_count($all, 'Warning') ?></span>
                         </button>
-                        <button 
-                            @click="activeFilter = 'Debug'" 
+                        <button
+                            @click="activeFilter = 'Debug'"
                             :class="{ 'ring-2 ring-blue-400': activeFilter === 'Debug' }"
                             class="inline-flex items-center px-4 py-2 text-blue-700 transition-colors rounded bg-blue-50 hover:bg-blue-100">
                             <span class="font-medium">Debug</span>
                             <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 rounded"><?= substr_count($all, 'Debug') ?></span>
                         </button>
-                        <button 
-                            @click="activeFilter = 'Info'" 
+                        <button
+                            @click="activeFilter = 'Info'"
                             :class="{ 'ring-2 ring-green-400': activeFilter === 'Info' }"
                             class="inline-flex items-center px-4 py-2 text-green-700 transition-colors rounded bg-green-50 hover:bg-green-100">
                             <span class="font-medium">Info</span>
                             <span class="ml-2 px-2 py-0.5 text-xs bg-green-100 rounded"><?= substr_count($all, 'Info') ?></span>
                         </button>
-                        <button 
-                            @click="activeFilter = 'Error'" 
+                        <button
+                            @click="activeFilter = 'Error'"
                             :class="{ 'ring-2 ring-red-400': activeFilter === 'Error' }"
                             class="inline-flex items-center px-4 py-2 text-red-700 transition-colors rounded bg-red-50 hover:bg-red-100">
                             <span class="font-medium">Errors</span>
                             <span class="ml-2 px-2 py-0.5 text-xs bg-red-100 rounded"><?= substr_count($all, 'Error') ?></span>
                         </button>
-                        <button 
-                            @click="activeFilter = 'Warning'" 
+                        <button
+                            @click="activeFilter = 'Warning'"
                             :class="{ 'ring-2 ring-yellow-400': activeFilter === 'Warning' }"
                             class="inline-flex items-center px-4 py-2 text-yellow-700 transition-colors rounded bg-yellow-50 hover:bg-yellow-100">
                             <span class="font-medium">Warnings</span>
@@ -72,17 +73,16 @@ $all = implode(",", $logs);
 
                     <div class="flex items-center gap-4 md:ml-auto">
                         <div class="relative flex-1">
-                            <input 
-                                type="text" 
-                                id="log-search" 
-                                class="w-full py-2 pl-10 pr-4 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-gray-400" 
-                                placeholder="Search logs..."
-                            >
+                            <input
+                                type="text"
+                                id="log-search"
+                                class="w-full py-2 pl-10 pr-4 border border-gray-200 rounded focus:ring-1 focus:ring-gray-400 focus:border-gray-400"
+                                placeholder="Search logs...">
                             <svg class="absolute w-5 h-5 text-gray-400 -translate-y-1/2 left-3 top-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        
+
                         <form id="_delete_logs" method="post">
                             <input type="hidden" name="_delete_logs" value="<?= md5(session_get('email')) ?>">
                             <button id="submitBtn" type="submit" class="px-4 py-2 text-white transition-colors bg-red-500 rounded-lg hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
@@ -107,11 +107,10 @@ $all = implode(",", $logs);
                         <?php $count = 0; ?>
                         <?php foreach ($logs as $log) : ?>
                             <?php $log = json_decode($log); ?>
-                            <tr 
+                            <tr
                                 x-show="activeFilter === 'all' || activeFilter === '<?= $log->level ?>'"
-                                @click="selectedRow === <?= $count ?> ? selectedRow = null : selectedRow = <?= $count ?>" 
-                                class="border-b border-gray-100 cursor-pointer hover:bg-gray-50"
-                            >
+                                @click="selectedRow === <?= $count ?> ? selectedRow = null : selectedRow = <?= $count ?>"
+                                class="border-b border-gray-100 cursor-pointer hover:bg-gray-50">
                                 <th scope="row" class="flex items-center px-2 py-3 md:px-6">
                                     <?php if ($log->level === "Error") : ?>
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-red-600">
@@ -162,10 +161,9 @@ $all = implode(",", $logs);
                                 </td>
 
                             </tr>
-                            <tr 
+                            <tr
                                 x-show="selectedRow === <?= $count ?> && (activeFilter === 'all' || activeFilter === '<?= $log->level ?>')"
-                                class="border-b border-gray-100"
-                            >
+                                class="border-b border-gray-100">
                                 <?php
                                 $classes = match ($log->level) {
                                     "Info" => "bg-green-50/30 text-green-800 p-4 space-y-1.5 text-sm",
@@ -243,7 +241,7 @@ $all = implode(",", $logs);
         document.getElementById('log-search').addEventListener('input', function(e) {
             const searchTerm = e.target.value.toLowerCase();
             const rows = document.querySelectorAll('tbody tr:not([x-show])');
-            
+
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
                 row.style.display = text.includes(searchTerm) ? '' : 'none';
