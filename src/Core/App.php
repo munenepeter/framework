@@ -13,9 +13,11 @@ class App {
     public $path = '';
     private static $instance;
     protected $booted = false;
+    private $cacheDuration = 2;
 
     private function __construct(string $basePath) {
         $this->path = $basePath;
+        $this->cacheDuration = is_dev() ? 2 : 60;
     }
 
     public static function getInstance(string $basePath): self {
@@ -34,9 +36,20 @@ class App {
     }
 
     public function configure(): self {
+        $cachedContainer = Cache::get('app_container');
+        if ($cachedContainer) {
+            $this->container = $cachedContainer;
+            logger("Info", "App container loaded from cache");
+            return $this;
+        }
+
         $this->bind('app-path', $this->path);
         $this->bind('config', Config::load());
         $this->bind('middlewares', []);
+
+        $this->boot();
+        
+        Cache::put('app_container', $this->container, $this->cacheDuration);
         return $this;
     }
 
@@ -50,13 +63,12 @@ class App {
         if ($this->booted) {
             return;
         }
-
         $capsule = new Capsule;
 
         // Register the capsule instance in the container
         $this->bind('db', $capsule);
         $capsule = $this->get('db');
-        
+
         // Set up the database connection
         Connection::make($this->get('config.db'), $capsule);
 
@@ -76,17 +88,16 @@ class App {
     }
 
     public function withMiddleware(callable $middleware): self {
+        //TODO
         return $this;
     }
 
     public function withExceptions(callable $middleware): self {
+        //TODO: but not needed we can stick with normal php exceptions
         return $this;
     }
 
     public function create(): self {
-        // Boot all service providers
-        $this->boot();
-
         if (php_sapi_name() === 'cli') {
             $this->handleCli();
         } else {
@@ -99,6 +110,7 @@ class App {
         try {
             Router::load($this->get('web-routes'))->direct(Request::uri(), Request::method());
         } catch (\Exception $e) {
+            Cache::forget('app_container');
             abort($e->getMessage(), $e->getCode());
         }
     }
@@ -116,17 +128,33 @@ class App {
 
         if (!$commandClass) {
             echo "Command '{$commandName}' not found.\n";
+            logger('error', "Command '{$commandName}' not found.");
+
             $this->showAvailableCommands();
             exit(1);
         }
+        try {
 
-        $command = new $commandClass($this->get('logger'));
-        $exitCode = $command->handle();
+            $command = new $commandClass();
 
-        exit($exitCode);
+            if (!method_exists($command, 'handle')) {
+                throw new \Exception("Method handle does not exist on the {$command} class!", 500);
+            }
+            //call cmd handler
+            $exitCode = $command->handle();
+
+            exit($exitCode);
+        } catch (\Exception $e) {
+            echo "\033[31mError: " . $e->getMessage() . "\033[0m" . PHP_EOL; // Red text
+            logger('error', $e->getMessage());
+            Cache::forget('app_container');
+        }
     }
 
     private function getCommandClass(string $commandName): string {
+        if (!file_exists($this->get('console-routes'))) {
+            return '';
+        }
         $commands = require $this->get('console-routes');
 
         return $commands[$commandName] ?? '';

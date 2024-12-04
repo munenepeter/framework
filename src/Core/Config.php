@@ -123,6 +123,7 @@ class Config {
     public static function hasEnvFileChanged($config): bool {
         if ($config === null) {
             Logger::Info("Config: Caching ENV file...");
+            Cache::forget('app_container');
             return true;
         }
         $current_env_hash = hash_file('sha256', self::$env_file);
@@ -130,6 +131,7 @@ class Config {
 
         if ($current_env_hash !== $previous_env_hash) {
             Logger::Info("Config: ENV file has been modified, refreshing the config cache");
+            Cache::forget('app_container');
             return true;
         }
         return false;
