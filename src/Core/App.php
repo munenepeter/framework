@@ -13,14 +13,13 @@ class App {
     public $path = '';
     private static $instance;
     protected $booted = false;
-    private $cacheDuration = 2;
 
     private function __construct(string $basePath) {
         $this->path = $basePath;
-        $this->cacheDuration = is_dev() ? 2 : 60;
     }
 
     public static function getInstance(string $basePath): self {
+
         if (self::$instance === null) {
             self::$instance = new self($basePath);
         }
@@ -36,20 +35,13 @@ class App {
     }
 
     public function configure(): self {
-        $cachedContainer = Cache::get('app_container');
-        if ($cachedContainer) {
-            $this->container = $cachedContainer;
-            logger("Info", "App container loaded from cache");
-            return $this;
-        }
-
+        
         $this->bind('app-path', $this->path);
         $this->bind('config', Config::load());
         $this->bind('middlewares', []);
 
         $this->boot();
         
-        Cache::put('app_container', $this->container, $this->cacheDuration);
         return $this;
     }
 
@@ -110,7 +102,6 @@ class App {
         try {
             Router::load($this->get('web-routes'))->direct(Request::uri(), Request::method());
         } catch (\Exception $e) {
-            Cache::forget('app_container');
             abort($e->getMessage(), $e->getCode());
         }
     }
@@ -147,7 +138,6 @@ class App {
         } catch (\Exception $e) {
             echo "\033[31mError: " . $e->getMessage() . "\033[0m" . PHP_EOL; // Red text
             logger('error', $e->getMessage());
-            Cache::forget('app_container');
         }
     }
 
