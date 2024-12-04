@@ -20,6 +20,7 @@ class Config {
         $cachedConfig = Cache::get(self::$cache_key);
 
         if ($cachedConfig !== null && !self::hasEnvFileChanged($cachedConfig)) {
+            self::populateEnv($cachedConfig);
             return $cachedConfig;
         }
 
@@ -27,8 +28,28 @@ class Config {
         $config['hash'] = hash_file('sha256', self::$env_file);
 
         Cache::put(self::$cache_key, $config);
+        self::populateEnv($config);
 
         return $config;
+    }
+
+    /**
+     * Populate $_ENV superglobal with flattened config values
+     * 
+     * @param array $config Configuration array
+     */
+    private static function populateEnv(array $config): void {
+        foreach ($config as $parent => $childArray) {
+            if ($parent === 'hash') continue;
+            
+            if (is_array($childArray)) {
+                foreach ($childArray as $child => $value) {
+                    $envKey = strtoupper("{$parent}_{$child}");
+                    $_ENV[$envKey] = $value;
+                    putenv("{$envKey}={$value}");
+                }
+            }
+        }
     }
 
     /**
