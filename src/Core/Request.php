@@ -163,10 +163,11 @@ class Request {
         if (self::isCli()) {
             return 'cli';
         }
-        
-        return trim(
-            parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'
-        );
+
+        $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $path = rtrim($path, '/'); // only trim trailing slash, keep leading one
+
+        return $path === '' ? '/' : $path;
     }
 
     /**

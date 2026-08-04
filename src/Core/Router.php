@@ -126,7 +126,7 @@ class Router {
     protected function callAction(array $params, string $controller, string $action): mixed {
 
         if (strpos($controller, "\\") === false) {
-            $controller = "Tabel\\Controllers\\{$controller}";
+            $controller = "App\\Controllers\\{$controller}";
         }
 
         if (!class_exists($controller)) {
