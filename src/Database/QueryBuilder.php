@@ -1,248 +1,340 @@
 <?php
 
-namespace Tabel\Core\Database;
-
+namespace Tabel\Database;
 
 /**
- * @package QueryBuilder
- * 
- * Class that interacts with the db
- * @return \Tabel\Models\Model Model returns an instance of Model class
- * 
- * @todo Implement ::get('database')->select('users')->where(['email', $email]);
- * 
- * @author Chungu Developers <developers@chungu.co.ke>
+ * QueryBuilder
+ *
+ * Thin PDO wrapper used internally by the Model base class.
+ * All user-supplied values go through prepared-statement bindings -
+ * never interpolated directly into SQL.
+ *
+ * @package Tabel\Database
  */
-
 class QueryBuilder {
 
-  private static $instance;
-  private $pdo;
+    private static ?QueryBuilder $instance = null;
+    private \PDO $pdo;
 
-  private function __construct($pdo)    {
-      $this->pdo = $pdo;
-  }
+    private function __construct(\PDO $pdo) {
+        $this->pdo = $pdo;
+    }
 
-  public static function getInstance($pdo)    {
-      if (self::$instance === null) {
-          self::$instance = new self($pdo);
-      }
+    public static function getInstance(\PDO $pdo): static {
+        if (self::$instance === null) {
+            self::$instance = new self($pdo);
+        }
+        return self::$instance;
+    }
 
-      return self::$instance;
-  }
+    // Core execution helpers
 
-   /**
-     * Run a SQL query and return the results or true for update/delete queries.
+    /**
+     * Execute a SELECT query and return rows as instances of $fetchClass,
+     * or plain associative arrays when $fetchClass is null.
      *
-     * @param string $sql The SQL query.
-     * @param string $table The name of the table.
-     * @return array|bool The results of the query or true for update/delete queries.
-     * @throws \Exception If there is an error with the query.
+     * @param  string      $sql
+     * @param  array       $bindings
+     * @param  string|null $fetchClass  Fully-qualified class name for FETCH_CLASS
+     * @return array
      */
-  public function runQuery(string $sql, string $table) {
+    public function select(string $sql, array $bindings = [], ?string $fetchClass = null): array {
+        $stmt = $this->run($sql, $bindings);
 
-    $model = singularize(ucwords($table));
+        if ($fetchClass !== null && class_exists($fetchClass)) {
+            // PDO::FETCH_PROPS_LATE used to ensure a class model constructor runs b4 db cols are assigned to object properties.
+            $stmt->setFetchMode(\PDO::FETCH_CLASS | \PDO::FETCH_PROPS_LATE, $fetchClass);
+        } else {
+            $stmt->setFetchMode(\PDO::FETCH_OBJ);
+        }
 
-    try {
-      $statement = $this->pdo->prepare($sql);
-      $statement->execute();
-    } catch (\Exception $e) {
-
-      logger("Error", 'Database: ' . $e->getMessage() . PHP_EOL . " $sql ");
-      throw new \Exception("There seems to be something wrong with the query!" . PHP_EOL);
+        return $stmt->fetchAll();
     }
 
-
-    $results = $statement->fetchAll(\PDO::FETCH_CLASS,  "Tabel\\Models\\{$model}");
-
-    if ($this->isUpdateOrDeleteQuery($sql) && empty($results)) {
-        return true;
+    /**
+     * Execute an INSERT / UPDATE / DELETE and return the affected row count.
+     *
+     * @param  string $sql
+     * @param  array  $bindings
+     * @return int  rows affected
+     */
+    public function statement(string $sql, array $bindings = []): int {
+        $stmt = $this->run($sql, $bindings);
+        return $stmt->rowCount();
     }
 
-    return $results;
-  }
-  /**
-   * selectAll
-   * 
-   * This selects everything from a given table
-   * @param string $table table from which to selct the data
-   * 
-   * @return \Tabel\Models\Model returns an instance of Model with the same table name
-   */
-  public function selectAll(string $table) {
-
-    $sql = "select * from {$table} ORDER BY `created_at` DESC;";
-
-    return $this->runQuery($sql, $table);
-  }
-  /**
-   * Select
-   * Selects given values 
-   * 
-   * @param string $table Table from which to select
-   * @param array $values The columns in the db to select from
-   * 
-   * @return \Tabel\Models\Model returns an instance of Model with the same table name
-   */
-  public function select(string $table, array $values) {
-
-    $values =  implode(',', $values);
-    $sql = "select {$values}  from {$table}";
-    return $this->runQuery($sql, $table);
-  }
-
-  public function selectAllWhereID(string $table, $value) {
-
-    //To do Implement Dynamic Primary key row
-    $sql = "select * from {$table} where `id` = \"$value\" ORDER BY `created_at` DESC;";
-
-    return $this->runQuery($sql, $table);
-  }
-
-  public function selectAllWhere(string $table, $column, $value, $condition = "=") {
-
-    $sql = "select * from {$table} where `{$column}` $condition \"$value\" ORDER BY `created_at` DESC;";
-
-    return $this->runQuery($sql, $table);
-  }
-
-
-  /**
-   * SelectWhere
-   * 
-   * Selects given column names given a certain condition
-   * 
-   * @param string $table Table from which to select
-   * @param array $values The columns in the db to select from
-   * @param array $condition The condition to be fulfiled by the where clause
-   * 
-   * @example 
-   *  selectWhere('table_name", ['email', 'pass'], ['email','test@test.com']);
-   */
-
-  public function selectWhere(string $table, array $values, array $condition) {
-
-    $values =  implode(',', $values);
-
-    //pure madness
-    $condition[1] = sprintf("%s$condition[1]%s", '"', '"');
-
-    $condition =  implode(' = ', $condition);
-
-    $sql = "select {$values}  from {$table} where {$condition}";
-
-    return $this->runQuery($sql, $table);
-  }
-
-
-  public function update(string $table, $dataToUpdate, $where, $isValue) {
-    $sql = "UPDATE {$table} SET $dataToUpdate WHERE `$where` = \"$isValue\"";
-
-
-
-    logger("Info", '<b>' . ucfirst(auth()->username) . '</b>' . " Updated a record in {$table} table ");
-
-    return $this->runQuery($sql, $table);
-  }
-  //DELETE FROM table_name WHERE condition;
-  public function delete(string $table, $where, $isValue) {
-
-    $sql = "DELETE FROM {$table} WHERE `$where` = \"$isValue\"";
-
-
-    logger("Info", '<b>' . ucfirst(auth() ? auth()->username : $_SERVER['REMOTE_ADDR']) . '</b>' . " Deleted a record in {$table} table ");
-
-    return $this->runQuery($sql, $table);
-  }
-  public function insert(string $table, array $parameters) {
-
-    $sql = sprintf(
-      'INSERT INTO %s (%s) VALUES (%s)',
-
-      $table,
-
-      implode(', ', array_keys($parameters)),
-
-      ':' . implode(', :', array_keys($parameters))
-    );
-
-    try {
-
-      $statement = $this->pdo->prepare($sql);
-      $statement->execute($parameters);
-
-      logger("Info", '<b>' . ucfirst(auth()->username ?? "Someone") . '</b>' . " Inserted a new record to {$table} table ");
-    } catch (\Exception $e) {
-
-      logger("Error", "Database: " . $e->getMessage() . ": <br> <pre>{$sql}</pre>");
-
-      throw new \Exception("Database: Error with Query" . $e->getCode());
-    }
-  }
-  //Albtatry Query FROM table_name WHERE condition;
-  public function query(string $sql) {
-
-    list($childClass, $caller) = debug_backtrace(false, 2);
-
-    try {
-      $statement = $this->pdo->prepare($sql);
-      $statement->execute();
-    } catch (\Exception $e) {
-
-      logger("Error", 'Database: ' . $e->getMessage() . PHP_EOL . " $sql ");
-      throw new \Exception("Wrong query <br> <pre>{$sql}</pre>" . PHP_EOL . $e->getCode());
+    /**
+     * Execute an INSERT and return the last inserted id.
+     *
+     * @param  string $sql
+     * @param  array  $bindings
+     * @return string|false
+     */
+    public function insert(string $sql, array $bindings = []): string|false {
+        $this->run($sql, $bindings);
+        return $this->pdo->lastInsertId();
     }
 
-    $results = $statement->fetchAll(\PDO::FETCH_CLASS, $caller['class']);
+    // Convenience methods (used by Model and legacy code)
 
-    if ($this->isUpdateOrDeleteQuery($sql) && empty($results)) {
-       return true;
+    /**
+     * Select all rows from a table, ordered by created_at DESC.
+     *
+     * @param  string      $table
+     * @param  string|null $fetchClass
+     * @return array
+     */
+    public function selectAll(string $table, ?string $fetchClass = null): array {
+        $sql = "SELECT * FROM `{$table}` ORDER BY `created_at` DESC";
+        return $this->select($sql, [], $fetchClass);
     }
-    return $results;
-  }
 
-  public function queryInsert(string $sql) {
-    try {
+    /**
+     * Select all rows matching a single column condition.
+     *
+     * @param  string      $table
+     * @param  string      $column
+     * @param  mixed       $value
+     * @param  string      $operator  =, <, >, <=, >=, !=, LIKE
+     * @param  string|null $fetchClass
+     * @return array
+     */
+    public function selectWhere(
+        string $table,
+        string $column,
+        mixed $value,
+        string $operator = '=',
+        ?string $fetchClass = null
+    ): array {
+        $allowed = ['=', '<', '>', '<=', '>=', '!=', '<>', 'LIKE', 'NOT LIKE'];
+        if (!in_array(strtoupper($operator), $allowed, true)) {
+            throw new \InvalidArgumentException("Unsupported operator: {$operator}");
+        }
 
-      $statement = $this->pdo->prepare($sql);
-      if ($statement->execute()) {
-        logger("Info", '<b>' . ucfirst(auth()->username ?? "Someone") . '</b>' . " Inserted a new record to table ");
-      } else {
-        logger("Info", '<b>' . ucfirst(auth()->username ?? "Someone") . '</b>' . " something went wrong");
-      }
-    } catch (\Exception $e) {
-
-      logger("Error", "Database: " . $e->getMessage() . ": <br> <pre>{$sql}</pre>");
-
-      throw new \Exception("Database: Error with Query" . $e->getCode());
+        $sql = "SELECT * FROM `{$table}` WHERE `{$column}` {$operator} :value ORDER BY `created_at` DESC";
+        return $this->select($sql, [':value' => $value], $fetchClass);
     }
-  }
 
-  //DELETE FROM table_name WHERE condition;
-  public function join(string $table1, string $table2, $fk, $pk) {
+    /**
+     * Select a single row by primary key.
+     *
+     * @param  string      $table
+     * @param  mixed       $id
+     * @param  string      $primaryKey
+     * @param  string|null $fetchClass
+     * @return object|array|null
+     */
+    public function selectById(
+        string $table,
+        mixed $id,
+        string $primaryKey = 'id',
+        ?string $fetchClass = null
+    ): object|array|null {
+        $sql = "SELECT * FROM `{$table}` WHERE `{$primaryKey}` = :id LIMIT 1";
+        $rows = $this->select($sql, [':id' => $id], $fetchClass);
+        return $rows[0] ?? null;
+    }
 
+    /**
+     * Insert a row and return the new id.
+     *
+     * @param  string $table
+     * @param  array  $data  associative [ column => value ]
+     * @return string|false
+     */
+    public function insertRow(string $table, array $data): string|false {
+        $columns  = implode(', ', array_map(fn($c) => "`{$c}`", array_keys($data)));
+        $placeholders = implode(', ', array_map(fn($c) => ":{$c}", array_keys($data)));
+        $sql = "INSERT INTO `{$table}` ({$columns}) VALUES ({$placeholders})";
 
-    /*
-       * SELECT * FROM table1 JOIN table2 ON table1.id1=table2.id2
-       */
-    $sql = "SELECT * FROM `{$table1}` INNER JOIN `{$table2}` ON {$table1}.{$fk}={$table2}.{$pk} ";
+        $bindings = [];
+        foreach ($data as $col => $val) {
+            $bindings[":{$col}"] = $val;
+        }
 
+        $this->logWrite('insert', $table);
+        return $this->insert($sql, $bindings);
+    }
 
-    $statement = $this->pdo->prepare($sql);
-    $statement->execute();
+    /**
+     * Update rows matching a single column condition.
+     *
+     * @param  string $table
+     * @param  array  $data       [ column => newValue ]
+     * @param  string $whereCol
+     * @param  mixed  $whereVal
+     * @return int  rows affected
+     */
+    public function updateWhere(string $table, array $data, string $whereCol, mixed $whereVal): int {
+        $setParts = implode(', ', array_map(fn($c) => "`{$c}` = :set_{$c}", array_keys($data)));
+        $sql = "UPDATE `{$table}` SET {$setParts} WHERE `{$whereCol}` = :where_val";
 
-    return $statement->fetchAll(\PDO::FETCH_ASSOC);
-  }
+        $bindings = [':where_val' => $whereVal];
+        foreach ($data as $col => $val) {
+            $bindings[":set_{$col}"] = $val;
+        }
 
-  public function count(string $table, array $condition) {
-    //SELECT COUNT(*) FROM $table WHERE $condition[0] = $condition[2];
-    list($column, $value) = $condition;
-    $sql = "SELECT COUNT(*) AS count FROM $table WHERE $column = \"$value\"";
+        $this->logWrite('update', $table);
+        return $this->statement($sql, $bindings);
+    }
 
-    return $this->runQuery($sql, $table);
-  }
+    /**
+     * Delete rows matching a single column condition.
+     *
+     * @param  string $table
+     * @param  string $whereCol
+     * @param  mixed  $whereVal
+     * @return int  rows affected
+     */
+    public function deleteWhere(string $table, string $whereCol, mixed $whereVal): int {
+        $sql = "DELETE FROM `{$table}` WHERE `{$whereCol}` = :where_val";
 
-  private function isUpdateOrDeleteQuery(string $sql):bool {
-    return str_contains($sql, "update") || str_contains($sql, "delete");
- }
+        $this->logWrite('delete', $table);
+        return $this->statement($sql, [':where_val' => $whereVal]);
+    }
+
+    /**
+     * Count rows matching a single column condition.
+     *
+     * @param  string $table
+     * @param  string $column
+     * @param  mixed  $value
+     * @return int
+     */
+    public function countWhere(string $table, string $column, mixed $value): int {
+        $sql  = "SELECT COUNT(*) AS `count` FROM `{$table}` WHERE `{$column}` = :value";
+        $stmt = $this->run($sql, [':value' => $value]);
+        $row  = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return (int) ($row['count'] ?? 0);
+    }
+
+    /**
+     * Run an arbitrary raw SQL query. SELECT returns an array of objects,
+     * everything else returns the affected row count.
+     *
+     * @param  string $sql
+     * @param  array  $bindings
+     * @return array|int
+     */
+    public function raw(string $sql, array $bindings = []): array|int {
+        $stmt = $this->run($sql, $bindings);
+
+        $verb = strtoupper(strtok(ltrim($sql), " \t\n\r"));
+        if ($verb === 'SELECT') {
+            $stmt->setFetchMode(\PDO::FETCH_OBJ);
+            return $stmt->fetchAll();
+        }
+
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Paginate a table with a DB-level LIMIT / OFFSET.
+     *
+     * Runs two queries:
+     *  1. COUNT(*) to get the total row count.
+     *  2. SELECT with LIMIT + OFFSET to fetch only the current page.
+     *
+     * @param  string      $table
+     * @param  int         $perPage
+     * @param  int         $currentPage  1-indexed
+     * @param  array       $where        optional [ column, operator, value ] triple
+     * @param  string|null $fetchClass
+     * @return array{total: int, items: array}
+     */
+    public function paginateTable(
+        string $table,
+        int $perPage,
+        int $currentPage,
+        array $where = [],
+        ?string $fetchClass = null
+    ): array {
+        $bindings  = [];
+        $whereSql  = '';
+
+        if (!empty($where)) {
+            [$col, $op, $val] = $where;
+            $allowed = ['=', '<', '>', '<=', '>=', '!=', '<>', 'LIKE', 'NOT LIKE'];
+            if (!in_array(strtoupper($op), $allowed, true)) {
+                throw new \InvalidArgumentException("Unsupported operator: {$op}");
+            }
+            $whereSql  = "WHERE `{$col}` {$op} :where_val";
+            $bindings[':where_val'] = $val;
+        }
+
+        // Query 1: total count (cheap index scan)
+        $countSql = "SELECT COUNT(*) AS `count` FROM `{$table}` {$whereSql}";
+        $countRow = $this->run($countSql, $bindings)->fetch(\PDO::FETCH_ASSOC);
+        $total    = (int) ($countRow['count'] ?? 0);
+
+        // Query 2: page slice
+        $offset = max(0, ($currentPage - 1) * $perPage);
+        $dataSql = "SELECT * FROM `{$table}` {$whereSql}
+                    ORDER BY `created_at` DESC
+                    LIMIT :limit OFFSET :offset";
+
+        // Named + positional can conflict in some drivers; use a fresh bindings map
+        $dataBindings = $bindings;
+        $dataBindings[':limit']  = $perPage;
+        $dataBindings[':offset'] = $offset;
+
+        $items = $this->select($dataSql, $dataBindings, $fetchClass);
+
+        return ['total' => $total, 'items' => $items];
+    }
+
+    /**
+     * JOIN two tables and return plain associative rows.
+     *
+     * @param  string $table1
+     * @param  string $table2
+     * @param  string $fk     foreign key column on table1
+     * @param  string $pk     primary key column on table2
+     * @return array
+     */
+    public function join(string $table1, string $table2, string $fk, string $pk): array {
+        $sql = "SELECT * FROM `{$table1}`
+                INNER JOIN `{$table2}` ON `{$table1}`.`{$fk}` = `{$table2}`.`{$pk}`";
+        $stmt = $this->run($sql);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    // -------------------------------------------------------------------------
+    // Internal helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Prepare and execute a statement, handling errors uniformly.
+     */
+    private function run(string $sql, array $bindings = []): \PDOStatement {
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($bindings);
+            return $stmt;
+        } catch (\PDOException $e) {
+            logger("Error", 'QueryBuilder: ' . $e->getMessage() . PHP_EOL . $sql);
+            throw new \RuntimeException(
+                "Database error: " . $e->getMessage(),
+                (int) $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    private function logWrite(string $operation, string $table): void {
+        $actor = function_exists('auth') && auth()
+            ? '<b>' . ucfirst(auth()->username) . '</b>'
+            : ($_SERVER['REMOTE_ADDR'] ?? 'CLI');
+
+        $verb = match ($operation) {
+            'insert' => 'Inserted a new record into',
+            'update' => 'Updated a record in',
+            'delete' => 'Deleted a record from',
+            default  => ucfirst($operation) . ' on',
+        };
+
+        if (function_exists('logger')) {
+            logger("Info", "{$actor} {$verb} `{$table}` table");
+        }
+    }
 }

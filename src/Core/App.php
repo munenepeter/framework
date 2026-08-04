@@ -5,7 +5,7 @@ namespace Tabel\Core;
 use Tabel\Core\Router;
 use Tabel\Core\Request;
 use Tabel\Database\Connection;
-use Illuminate\Database\Capsule\Manager as Capsule;
+use Tabel\Database\QueryBuilder;
 
 class App {
     protected $container = [];
@@ -55,14 +55,12 @@ class App {
         if ($this->booted) {
             return;
         }
-        $capsule = new Capsule;
 
-        // Register the capsule instance in the container
-        $this->bind('db', $capsule);
-        $capsule = $this->get('db');
-
-        // Set up the database connection
-        Connection::make($this->get('config.db'), $capsule);
+        // Build a raw PDO connection and store it in the container.
+        // QueryBuilder and Model both resolve it via app()->get('pdo').
+        $pdo = Connection::make($this->get('config.db'));
+        $this->bind('pdo', $pdo);
+        $this->bind('db', QueryBuilder::getInstance($pdo));
 
         $this->booted = true;
     }

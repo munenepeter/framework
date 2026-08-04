@@ -4,4 +4,6 @@ composer.phar
 /.vscode/
 /vendor/
 /.git/
+/playground/
+/storage/logs/*.log
 

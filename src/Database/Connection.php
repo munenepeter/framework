@@ -2,49 +2,87 @@
 
 namespace Tabel\Database;
 
-use Illuminate\Database\Capsule\Manager as Capsule;
+/**
+ * Connection
+ *
+ * Creates and returns a raw PDO instance. Supports only MySQL/MariaDB and SQLite.
+ *
+ * @package Tabel\Database
+ */
+class Connection {
 
-abstract class Connection {
-    private static $sqlite_database = APP_ROOT . "/database/database.sqlite";
+    private static string $sqliteDatabase = '';
 
-    public static function make(array $config, Capsule $capsule): void {
+    /**
+     * Build a PDO instance from the given config array.
+     *
+     * Expected keys: connection, host, database, username, password,
+     *                charset, collation, prefix, port
+     *
+     * @param  array $config
+     * @return \PDO
+     * @throws \RuntimeException
+     */
+    public static function make(array $config): \PDO {
+        self::$sqliteDatabase = defined('APP_ROOT')
+            ? APP_ROOT . '/database/database.sqlite'
+            : getcwd() . '/database/database.sqlite';
+
         try {
-            if ($config['connection'] === 'sqlite') {
-                if (!file_exists(self::$sqlite_database)) {
-                    touch(self::$sqlite_database);
-                }
-                
-                $capsule->addConnection([
-                    "driver" => $config['connection'],
-                    'database' => self::$sqlite_database,
-                ]);
-            } else {
-                $capsule->addConnection([
-                    "driver" => $config['connection'],
-                    "host" => $config['host'],
-                    "database" => $config['database'],
-                    "username" => $config['username'],
-                    "password" => $config['password'],
-                    "charset" => $config['charset'] ?? 'utf8mb4',
-                    "collation" => $config['collation'] ?? 'utf8mb4_unicode_ci',
-                    "prefix" => $config['prefix'] ?? '',
-                    "port" => $config['port'] ?? 3306,
-                ]);
-            }
-
-            // Make this Capsule instance available globally
-            $capsule->setAsGlobal();
-
-            // Setup the Eloquent ORM
-            $capsule->bootEloquent();
-            
-        } catch (\Exception $e) {
+            return match ($config['connection'] ?? 'mysql') {
+                'sqlite' => self::makeSqlite(),
+                default  => self::makeMysql($config),
+            };
+        } catch (\PDOException $e) {
             if (php_sapi_name() === 'cli') {
                 echo "Database Connection Error: " . $e->getMessage() . "\n";
                 exit(1);
-            } else {
-                abort($e->getMessage(), (int)$e->getCode());
             }
+            throw new \RuntimeException(
+                "Database Connection Error: " . $e->getMessage(),
+                (int) $e->getCode()
+            );
         }
+    }
+
+    private static function makeSqlite(): \PDO {
+        if (!file_exists(self::$sqliteDatabase)) {
+            $dir = dirname(self::$sqliteDatabase);
+            if (!is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+            touch(self::$sqliteDatabase);
+        }
+
+        $pdo = new \PDO('sqlite:' . self::$sqliteDatabase);
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        // Enable WAL for better concurrency
+        // assume user's preferences
+        $pdo->exec('PRAGMA journal_mode=WAL;');
+
+        return $pdo;
+    }
+
+    private static function makeMysql(array $config): \PDO {
+        $charset   = $config['charset']   ?? 'utf8mb4';
+        $port      = $config['port']      ?? 3306;
+        $host      = $config['host']      ?? 'localhost';
+        $database  = $config['database']  ?? '';
+
+        $dsn = "mysql:host={$host};port={$port};dbname={$database};charset={$charset}";
+
+        $pdo = new \PDO(
+            $dsn,
+            $config['username'] ?? '',
+            $config['password'] ?? '',
+            [
+                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+
+        return $pdo;
     }
 }

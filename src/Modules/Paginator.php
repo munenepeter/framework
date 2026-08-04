@@ -2,63 +2,42 @@
 
 namespace Tabel\Modules;
 
-use Tabel\Core\Request;
-
+/**
+ * Paginator
+ *
+ * Static utility for paginating plain PHP arrays (data already in memory).
+ *
+ * For database-backed pagination use Model::paginate() - it pushes
+ * LIMIT/OFFSET into SQL so only the rows for the requested page are
+ * ever fetched from the database.
+ */
 class Paginator {
-    public static $per_page;
-    public static $totalCount;
-    public static $start;
-    public static $end;
 
     /**
-     * Get the current page number from the request
-     * 
-     * @return int
+     * Paginate an in-memory array.
+     *
+     * Best for small datasets that are already loaded (API responses, CSVs…).
+     * For database queries always prefer Model::paginate() instead.
+     *
+     * @param  array $data
+     * @param  int   $perPage
+     * @return LengthAwarePaginator
      */
-    public static function getPage(): int {
-        return isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+    public static function paginate(array $data, int $perPage = 10): LengthAwarePaginator {
+        $currentPage = self::currentPage();
+        $total       = count($data);
+        $lastPage    = max(1, (int) ceil($total / $perPage));
+        $currentPage = max(1, min($currentPage, $lastPage));
+        $offset      = $perPage * ($currentPage - 1);
+        $items       = array_slice($data, $offset, $perPage);
+
+        return new LengthAwarePaginator($items, $total, $perPage, $currentPage);
     }
 
     /**
-     * Paginate the given data
-     * 
-     * @param array $data Data to paginate
-     * @param int $per_page Number of items per page
-     * @return array Paginated data
+     * Resolve the current page number from the request ($_GET['page']).
      */
-    public static function paginate(array $data, int $per_page = 10): array {
-        self::$per_page = $per_page;
-        $currentPage = self::getPage();
-        $offset = $per_page * ($currentPage - 1);
-
-        $paginated_data = array_slice($data, $offset, $per_page);
-
-        if (empty($paginated_data)) {
-            self::$start = self::$end = 0;
-        } else {
-            self::$start = $offset + 1;
-            self::$end = $offset + count($paginated_data);
-        }
-
-        return $paginated_data;
-    }
-
-    /**
-     * Display pagination links
-     * 
-     * @param array $data Data to paginate
-     * @return void
-     */
-    public static function showLinks(array $data): void {
-        self::$totalCount = count($data);
-        $max_pages = ceil(self::$totalCount / self::$per_page);
-        $currentPage = self::getPage();
-
-        if ($currentPage > 1) {
-            echo '<a class="p-2 text-blue-500" href="/' . Request::uri() . '?page=' . ($currentPage - 1) . '"> Previous </a>';
-        }
-        if ($currentPage < $max_pages) {
-            echo '<a class="p-2 text-blue-500" href="/' . Request::uri() . '?page=' . ($currentPage + 1) . '"> Next </a>';
-        }
+    public static function currentPage(): int {
+        return isset($_GET['page']) ? max(1, (int) $_GET['page']) : 1;
     }
 }

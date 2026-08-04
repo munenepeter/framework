@@ -10,7 +10,7 @@ class Logger {
 
     protected static $logBuffer = [];
     protected static $cachedUserInfo = null;
-    public static $logFile = APP_ROOT . "/storage/logs/tabel.log";
+    public static $logFile = \APP_ROOT . "/storage/logs/tabel.log";
 
     public static function log(string $level, string $msg) {
 
@@ -85,7 +85,7 @@ class Logger {
 
     protected static function writeBufferToFile() {
         if (!file_exists(self::$logFile)) {
-            mkdir(APP_ROOT . "/storage/logs");
+            mkdir(\APP_ROOT . "/storage/logs", 0755, true);
         }
 
         $file = fopen(self::$logFile, 'a+', 1);
