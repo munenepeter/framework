@@ -75,45 +75,41 @@ class Router {
      * @return mixed Can return any type depending on the called route
      */
     public function direct(string $uri, string $requestType): mixed {
-
         $params = [];
         $regexUri = '';
-
+        $matched = false;
+        if ($uri === "") {
+            $uri = "/";
+        }
         foreach (Router::$routes[$requestType] as $route => $controller) {
             if (preg_match("%^{$route}$%", $uri, $matches) === 1) {
                 $regexUri = $route;
-                Router::$routes[$requestType][$regexUri] = $controller;
-
                 unset($matches[0]);
                 $params = $matches;
+                $matched = true;
                 break;
             }
         }
 
+        if (!$matched) {
+            throw new \Exception("There is no handler for <b>" . strtoupper($requestType) . " {$uri}</b> ", 404);
+        }
 
         if (is_callable(Router::$routes[$requestType][$regexUri])) {
             return Router::$routes[$requestType][$regexUri](...$params);
         }
-        if (!array_key_exists($uri, Router::$routes[$requestType])) {
-            throw new \Exception("There is no handler for <b>" . strtoupper($requestType) . " /{$uri}</b> ", 404);
-        }
+
         if (is_array(Router::$routes[$requestType][$regexUri])) {
             return $this->callAction(
                 $params,
                 ...Router::$routes[$requestType][$regexUri]
             );
         }
-        if (!empty($regexUri) && $regexUri !== "") {
-            return $this->callAction(
-                $params,
-                ...explode('@', Router::$routes[$requestType][$regexUri])
-            );
-        } else {
-            return $this->callAction(
-                $params,
-                ...explode('@', Router::$routes[$requestType][$uri])
-            );
-        }
+
+        return $this->callAction(
+            $params,
+            ...explode('@', Router::$routes[$requestType][$regexUri])
+        );
     }
     /**
      * Calls a controller action
