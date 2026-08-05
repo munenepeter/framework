@@ -351,15 +351,20 @@ function time_ago($datetime, $full = false) {
  * 
  * @return void  echo Path to the requested resource
  */
-function asset($path) {
+function asset(string $path): void {
+    $path = ltrim($path, '/');
+
     if (Request::isCli()) {
-        return "/public/$path";
+        echo "/$path";
+        return;
     }
-    
-    if (is_dev()) {
-        echo BASE_URL . ":" . ($_SERVER['SERVER_PORT'] ?? '80') . "/public/$path";
+
+    $port = $_SERVER['SERVER_PORT'] ?? '';
+
+    if (is_dev() && !in_array($port, ['80', '443'])) {
+        echo BASE_URL . ":{$port}/{$path}";
     } else {
-        echo BASE_URL . "/public/$path";
+        echo BASE_URL . "/{$path}";
     }
 }
 function get_perc($total, $number) {
