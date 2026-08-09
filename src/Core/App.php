@@ -10,9 +10,9 @@ use Tabel\Database\QueryBuilder;
 class App {
     protected $container = [];
 
-    public string $path = '';
-    private static self $instance;
-    protected bool $booted = false;
+    public $path = '';
+    private static $instance;
+    protected $booted = false;
 
     /** @var string cached_routes_path */
     private string $cachedRoutes;
@@ -20,6 +20,12 @@ class App {
     private function __construct(string $basePath) {
         $this->path = $basePath;
         $this->cachedRoutes = $this->path . '/storage/cache/routes.php';
+    }
+
+    //App::version()
+
+    public static function version(){
+        return '99cd18f';
     }
 
     public static function getInstance(string $basePath): self {
@@ -39,6 +45,8 @@ class App {
     }
 
     public function configure(): self {
+
+        $this->setErrorHandler();
 
         $this->bind('app-path', $this->path);
         $this->bind('config', Config::load());
@@ -113,7 +121,8 @@ class App {
                 Request::method()
             );
         } catch (\Exception $e) {
-            abort($e->getMessage(), $e->getCode());
+            logger('error', $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            abort($e->getMessage(), $e->getCode() ?: 500, $e->getFile(), $e->getLine(), $e->getTrace());
         }
     }
 
@@ -168,5 +177,30 @@ class App {
             echo "  - {$command}\n";
         }
         echo "\n";
+    }
+
+    private function setErrorHandler(): void {
+        if (php_sapi_name() !== 'cli') {
+            // set handler
+            set_error_handler('tabelErrorHandler');
+
+            //handle fatal errors and exceptions
+            register_shutdown_function(function () {
+                $error = error_get_last();
+                if ($error && in_array($error['type'], [E_ERROR, E_CORE_ERROR, E_COMPILE_ERROR, E_PARSE])) {
+                    tabelErrorHandler($error['type'], $error['message'], $error['file'], $error['line']);
+                }
+            });
+
+            set_exception_handler(function ($exception) {
+                tabelErrorHandler(
+                    E_ERROR,
+                    $exception->getMessage(),
+                    $exception->getFile(),
+                    $exception->getLine(),
+                    []
+                );
+            });
+        }
     }
 }

@@ -44,7 +44,7 @@ function checkView(string $filename) {
  */
 function view(string $filename, array $data = []) {
     extract($data);
-    $filename = app()->get('app-path'). "/views/{$filename}.view.php";
+    $filename = app()->get('app-path') . "/views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -73,23 +73,30 @@ function redirect(string $path) {
  * 
  * @param string $message The exception/error msg
  * @param int $code Status code passed with the exception
+ * @param string|null $file File the error originated in (optional, used in dev view)
+ * @param int|null $line Line the error originated on (optional, used in dev view)
+ * @param array|null $trace debug_backtrace()-style trace (optional, used in dev view)
  * 
  * @return string view
  */
-function abort($message, $code) {
+function abort($message, $code, ?string $file = null, ?int $line = null, ?array $trace = null) {
     if ($code === 0 || is_string($code) || $code === "") {
         $code = 500;
-        http_response_code(500);
     }
+    http_response_code($code);
+
     view_internal('_error', [
         'code' => $code,
-        'message' => $message
+        'message' => $message,
+        'file' => $file,
+        'line' => $line,
+        'trace' => $trace,
     ]);
     exit;
 }
 function view_internal(string $filename, array $data = []) {
     extract($data);
-    $filename = __DIR__."/src/Views/{$filename}.view.php";
+    $filename = __DIR__ . "/src/Views/{$filename}.view.php";
 
     checkView($filename);
 
@@ -151,7 +158,7 @@ function subtract_date(int $days_to_subtract) {
     return date_format($date, 'Y-m-d H:i:s');
 }
 
-function slug($string) {
+function slug(string $string) {
     return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string)));
 }
 
@@ -265,7 +272,7 @@ function downloadFile($dir, $file) {
 function dd($var) {
     //to do
     // debug_print_backtrace();
-    if(php_sapi_name() === 'cli') {
+    if (php_sapi_name() === 'cli') {
         var_dump($var);
         die();
     }
@@ -293,7 +300,7 @@ function url() {
     if (Request::isCli()) {
         return '';
     }
-    
+
     if (!is_dev()) {
         return sprintf(
             "%s://%s%s",
@@ -385,7 +392,7 @@ function request(string $key, $default = null) {
         // Parse CLI arguments if needed
         return $default;
     }
-    
+
     if (isset($_REQUEST[$key])) {
         return htmlspecialchars(trim($_REQUEST[$key]));
     }
@@ -522,7 +529,28 @@ if (!function_exists('collapse')) {
     }
 }
 
+if (!function_exists('value')) {
+    /**
+     * Return the value, resolving it if it's a Closure.
+     *
+     * @param mixed $value
+     * @param mixed ...$args passed through if $value is callable
+     * @return mixed
+     */
+    function value($value, ...$args) {
+        return $value instanceof \Closure ? $value(...$args) : $value;
+    }
+}
+
 if (!function_exists('array_get')) {
+    /**
+     * Get an item from an array or object using "dot" notation.
+     *
+     * @param mixed $target
+     * @param string|array|null $key
+     * @param mixed $default
+     * @return mixed
+     */
     function array_get($target, $key, $default = null) {
         if (is_null($key)) {
             return $target;
@@ -545,7 +573,7 @@ if (!function_exists('array_get')) {
                 $result = [];
 
                 foreach ($target as $item) {
-                    $result[] = data_get($item, $key);
+                    $result[] = array_get($item, $key);
                 }
 
                 return in_array('*', $key) ? collapse($result) : $result;
@@ -564,10 +592,330 @@ if (!function_exists('array_get')) {
             } elseif (is_object($target) && isset($target->{$segment})) {
                 $target = $target->{$segment};
             } else {
-                return $default;
+                return value($default);
             }
         }
 
         return $target;
     }
+}
+
+if (!function_exists('data_get')) {
+    /**
+     * Alias of array_get() using the conventional Laravel-style name, in
+     * case other code (or copy-pasted snippets) expects data_get() directly.
+     *
+     * @param mixed $target
+     * @param string|array|null $key
+     * @param mixed $default
+     * @return mixed
+     */
+    function data_get($target, $key, $default = null) {
+        return array_get($target, $key, $default);
+    }
+}
+
+
+/**
+ * Parse stack trace into structured frames with code preview
+ * 
+ * @param string $trace
+ * @return array
+ */
+function parseStackTrace($trace) {
+    $frames = [];
+    $lines = explode("\n", $trace);
+
+    foreach ($lines as $line) {
+        if (preg_match('/#(\d+)\s+(?:([^(]+)\((.*?)\):\s+)?(?:(.+)\((\d+)\)|(.+))/', $line, $matches)) {
+            $frame = [
+                'number' => $matches[1] ?? '',
+                'function' => $matches[2] ?? '',
+                'args' => $matches[3] ?? '',
+                'file' => $matches[4] ?? $matches[6] ?? '',
+                'line' => $matches[5] ?? '',
+                'type' => 'vendor',
+            ];
+
+            // Determine if it's application or vendor code
+            if (isset($frame['file'])) {
+                if (strpos($frame['file'], '/vendor/') === false) {
+                    $frame['type'] = 'app';
+                }
+
+                // Extract class if available
+                if (preg_match('/(\w+)::(\w+)/', $frame['function'], $classMatch)) {
+                    $frame['class'] = $classMatch[1];
+                    $frame['function'] = $classMatch[2];
+                }
+
+                // Get code preview
+                $frame['code_preview'] = getCodePreview($frame['file'], $frame['line']);
+            }
+
+            $frames[] = $frame;
+        }
+    }
+
+    return $frames;
+}
+
+/**
+ * Get code preview around the error line
+ * 
+ * @param string $file
+ * @param int $line
+ * @param int $context
+ * @return array
+ */
+function getCodePreview($file, $line, $context = 10) {
+    if (!file_exists($file) || !is_readable($file)) {
+        return [];
+    }
+
+    $lines = file($file);
+    $start = max(0, $line - $context - 1);
+    $end = min(count($lines), $line + $context);
+    $preview = [];
+
+    for ($i = $start; $i < $end; $i++) {
+        $preview[$i + 1] = rtrim($lines[$i], "\r\n");
+    }
+
+    return $preview;
+}
+
+/**
+ * Simple syntax highlighting for code
+ *
+ * Tokenizes the RAW (unescaped) source first using placeholder markers,
+ * then HTML-escapes the whole string exactly once, then swaps the
+ * placeholders for real <span> tags. Escaping before tokenizing would
+ * turn `'` into `&#039;`, whose literal `#` then gets misread as the
+ * start of a `#`-style comment by the comment regex, corrupting
+ * everything after it on the line.
+ *
+ * @param string $code
+ * @return string
+ */
+function highlightCode(string $code) {
+    $placeholders = [];
+    // Token markers use control-byte delimiters wrapping a base-26 letter
+    // index (never digits). This keeps them invisible to every later regex
+    // pass (numbers \b\d+\b, keywords \b(word)\b, variables $word) no matter
+    // how many tokens exist, unlike a raw numeric index which a later
+    // "numbers" pass would happily match and corrupt.
+    $token = function (string $html) use (&$placeholders) {
+        $n = count($placeholders);
+        $letters = '';
+        do {
+            $letters = chr(97 + ($n % 26)) . $letters;
+            $n = intdiv($n, 26) - 1;
+        } while ($n >= 0);
+        $key = "\x01{$letters}\x02";
+        $placeholders[$key] = $html;
+        return $key;
+    };
+
+    // Strings first, so a `#` or `//` inside a string literal isn't
+    // mistaken for the start of a comment by the rule below.
+    $code = preg_replace_callback(
+        '/(["\'])(.*?)\1/',
+        fn($m) => $token('<span class="code-string">' . htmlspecialchars($m[0]) . '</span>'),
+        $code
+    );
+
+    // Comments (// or #) - runs on whatever's left, so string contents
+    // (already replaced with placeholders above) are immune.
+    $code = preg_replace_callback(
+        '/(\/\/.*|#.*)/',
+        fn($m) => $token('<span class="code-comment">' . htmlspecialchars($m[1]) . '</span>'),
+        $code
+    );
+
+    $keywords = [
+        'function',
+        'class',
+        'public',
+        'private',
+        'protected',
+        'static',
+        'return',
+        'if',
+        'else',
+        'foreach',
+        'for',
+        'while',
+        'try',
+        'catch',
+        'throw',
+        'new',
+        'use',
+        'namespace',
+        'extends',
+        'implements',
+        'abstract',
+        'final',
+        'interface',
+        'trait'
+    ];
+    $code = preg_replace_callback(
+        '/\b(' . implode('|', $keywords) . ')\b/',
+        fn($m) => $token('<span class="code-keyword">' . $m[1] . '</span>'),
+        $code
+    );
+
+    // Variables
+    $code = preg_replace_callback(
+        '/(\$[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)/',
+        fn($m) => $token('<span class="code-variable">' . $m[1] . '</span>'),
+        $code
+    );
+
+    // Numbers
+    $code = preg_replace_callback(
+        '/\b(\d+)\b/',
+        fn($m) => $token('<span class="code-number">' . $m[1] . '</span>'),
+        $code
+    );
+
+    // Escape whatever plain code text is left, exactly once.
+    $code = htmlspecialchars($code, ENT_QUOTES, 'UTF-8', false);
+
+    // Restore placeholders. A single strtr() pass isn't enough when one
+    // token's stored HTML contains another token's marker nested inside it
+    // (e.g. a string literal placeholder sitting inside a comment's matched
+    // text, since comments run after strings and can swallow their marker).
+    // Iterate until stable; bounded by placeholder count so it can't loop.
+    for ($i = 0, $max = count($placeholders) + 1; $i < $max; $i++) {
+        $next = strtr($code, $placeholders);
+        if ($next === $code) {
+            break;
+        }
+        $code = $next;
+    }
+
+    return $code;
+}
+
+function tabelErrorHandler(int|string $severity, string $message, string $file, int|string $line, array $context = []) {
+    // Don't handle errors that are suppressed with @
+    if (!(error_reporting() & $severity)) {
+        return false;
+    }
+
+    // Get error type name
+    $errorTypes = [
+        E_ERROR => 'Fatal Error',
+        E_WARNING => 'Warning',
+        E_PARSE => 'Parse Error',
+        E_NOTICE => 'Notice',
+        E_CORE_ERROR => 'Core Error',
+        E_CORE_WARNING => 'Core Warning',
+        E_COMPILE_ERROR => 'Compile Error',
+        E_COMPILE_WARNING => 'Compile Warning',
+        E_USER_ERROR => 'User Error',
+        E_USER_WARNING => 'User Warning',
+        E_USER_NOTICE => 'User Notice',
+        E_RECOVERABLE_ERROR => 'Recoverable Error',
+        E_DEPRECATED => 'Deprecated',
+        E_USER_DEPRECATED => 'User Deprecated'
+    ];
+
+    $errorType = $errorTypes[$severity] ?? 'Unknown Error';
+
+    logger('error', "{$errorType}: {$message} in {$file}:{$line}");
+
+    // No trace passed here on purpose: debug_backtrace() at this point only
+    // captures frames inside the error handler itself (tabelErrorHandler ->
+    // the registered closure), never the real call site of the error. The
+    // file/line PHP already gives us, plus the code snippet rendered from
+    // it, is the actual signal for warnings/notices/etc. Thrown Exceptions
+    // (see App::handleHttp's catch block) pass a real, useful trace instead.
+    abort("{$errorType}: {$message}", 500, $file, $line, null);
+    // Stop execution for fatal errors
+    if ($severity === E_ERROR || $severity === E_CORE_ERROR || $severity === E_COMPILE_ERROR) {
+        exit(1);
+    }
+
+    return true;
+}
+
+function getCodeContext(string $file, int $errorLine, int $contextLines = 3) {
+    if (!file_exists($file)) {
+        return [];
+    }
+
+    $lines = file($file, FILE_IGNORE_NEW_LINES);
+    $startLine = max(0, $errorLine - $contextLines - 1);
+    $endLine = min(count($lines) - 1, $errorLine + $contextLines - 1);
+
+    $context = [];
+    for ($i = $startLine; $i <= $endLine; $i++) {
+        $context[] = [
+            'number' => $i + 1,
+            'content' => $lines[$i] ?? '',
+            'isError' => ($i + 1) === $errorLine
+        ];
+    }
+
+    return $context;
+}
+
+
+function getErrorMessages() {
+
+    return [
+        '403' => [
+            'title' => 'Forbidden',
+            'client_message' => 'The server refused to fulfill the request.',
+            'developer_message' => 'Access to this resource is forbidden. Check file permissions or authentication requirements.'
+        ],
+        '404' => [
+            'title' => 'Not Found',
+            'client_message' => 'The page requested was not found on this server.',
+            'developer_message' => 'The requested URL was not found on this server. Check the URL or routing configuration.'
+        ],
+        '405' => [
+            'title' => 'Method Not Allowed',
+            'client_message' => 'The method specified is not allowed for this resource.',
+            'developer_message' => 'The HTTP method used is not supported for this endpoint. Check allowed methods in your route configuration.'
+        ],
+        '408' => [
+            'title' => 'Request Timeout',
+            'client_message' => 'Your browser failed to send a request in the time allowed.',
+            'developer_message' => 'The request took too long to process. Check for slow database queries or external API calls.'
+        ],
+        '500' => [
+            'title' => 'Internal Server Error',
+            'client_message' => 'The request was unsuccessful due to an unexpected condition.',
+            'developer_message' => 'An unexpected error occurred. Check error logs for more details.'
+        ],
+        '502' => [
+            'title' => 'Bad Gateway',
+            'client_message' => 'The server received an invalid response from the upstream server.',
+            'developer_message' => 'The upstream server returned an invalid response. Check if all services are running properly.'
+        ],
+        '504' => [
+            'title' => 'Gateway Timeout',
+            'client_message' => 'The upstream server failed to respond in time.',
+            'developer_message' => 'The upstream server timed out. Check if the service is overloaded or unresponsive.'
+        ],
+        // Database specific errors
+        '2002' => [
+            'title' => 'Database Connection Error',
+            'client_message' => 'A database connection error occurred.',
+            'developer_message' => 'Cannot connect to MySQL server. Check database host, port, and credentials.'
+        ],
+        '1049' => [
+            'title' => 'Database Not Found',
+            'client_message' => 'A database error occurred.',
+            'developer_message' => 'The specified database does not exist. Check database name in configuration.'
+        ],
+        '1045' => [
+            'title' => 'Access Denied',
+            'client_message' => 'A database authentication error occurred.',
+            'developer_message' => 'Access denied for the specified user. Check database username and password.'
+        ]
+    ];
 }
