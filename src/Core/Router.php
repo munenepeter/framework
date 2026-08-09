@@ -27,10 +27,18 @@ class Router {
      * Loads routes from a file
      * 
      * @param string $file Path to the route definition file
+     * @param string|null $cacheFile Optional path to a cache file for storing compiled routes
      * @return self Instance of Router class
      */
-    public static function load(string $file) {
+    public static function load(string $file, ?string $cacheFile = null) {
         $router = new static;
+
+        if ($cacheFile !== null && file_exists($cacheFile)) {
+            static::$routes = require $cacheFile;
+            logger("Info", "Router: Loaded routes from cache file: {$cacheFile}");
+            return $router;
+        }
+
         require $file;
         return $router;
     }
@@ -224,5 +232,59 @@ class Router {
         }
 
         return $controller->$action(...$params);
+    }
+
+    /**
+     * Cache the currently registered routes to a file as a plain PHP array
+     *
+     * @param ?string $file Path to write the cache file to
+     * @throws \Exception if any route uses a non-cacheable Closure controller
+     */
+    public static function cache(?string $file = null): void {
+        if (!$file) {
+            $file = app()->get('cache-routes');
+        }
+
+        if (!$file) {
+            throw new \Exception("No cache file path provided and 'cache-routes' config is not set.");
+        }
+        foreach (static::$routes as $method => $routes) {
+            foreach ($routes as $uri => $controller) {
+                if ($controller instanceof \Closure) {
+                    throw new \Exception(
+                        "Cannot cache route [{$method} {$uri}]: closures aren't cacheable. " .
+                            "Use 'Controller@method' or [Controller::class, 'method'] instead."
+                    );
+                }
+            }
+        }
+
+        $dir = dirname($file);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        $export = var_export(static::$routes, true);
+        $content = "<?php\n\n// Auto-generated route cache - do not edit directly.\n" .
+            "// Generated: " . date('Y-m-d H:i:s') . "\n\nreturn {$export};\n";
+
+        file_put_contents($file, $content);
+    }
+
+    /**
+     * Delete the route cache file if it exists
+     *
+     * @param string $file Path to the cache file
+     * @return bool True if a cache file was deleted
+     */
+    public static function clearCache(?string $file = null): bool {
+        if (!$file) {
+            $file = app()->get('cache-routes');
+        }
+
+        if (file_exists($file)) {
+            return unlink($file);
+        }
+        return false;
     }
 }

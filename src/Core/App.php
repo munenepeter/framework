@@ -10,12 +10,16 @@ use Tabel\Database\QueryBuilder;
 class App {
     protected $container = [];
 
-    public $path = '';
-    private static $instance;
-    protected $booted = false;
+    public string $path = '';
+    private static self $instance;
+    protected bool $booted = false;
+
+    /** @var string cached_routes_path */
+    private string $cachedRoutes;
 
     private function __construct(string $basePath) {
         $this->path = $basePath;
+        $this->cachedRoutes = $this->path . '/storage/cache/routes.php';
     }
 
     public static function getInstance(string $basePath): self {
@@ -35,13 +39,13 @@ class App {
     }
 
     public function configure(): self {
-        
+
         $this->bind('app-path', $this->path);
         $this->bind('config', Config::load());
         $this->bind('middlewares', []);
 
         $this->boot();
-        
+
         return $this;
     }
 
@@ -72,6 +76,9 @@ class App {
             }
             if ($layer === 'console') {
                 $this->bind('console-routes', $route_file);
+
+                //cause of caching we need to bind 
+                $this->bind('cache-routes', $this->cachedRoutes);
             }
         }
         return $this;
@@ -98,7 +105,13 @@ class App {
 
     private function handleHttp(): void {
         try {
-            Router::load($this->get('web-routes'))->direct(Request::uri(), Request::method());
+            Router::load(
+                $this->get('web-routes'),
+                $this->cachedRoutes
+            )->direct(
+                Request::uri(),
+                Request::method()
+            );
         } catch (\Exception $e) {
             abort($e->getMessage(), $e->getCode());
         }
