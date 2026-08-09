@@ -80,11 +80,34 @@ function redirect(string $path) {
  * @return string view
  */
 function abort($message, $code, ?string $file = null, ?int $line = null, ?array $trace = null) {
+    $code = filter_var($code, FILTER_VALIDATE_INT);
+    
     if ($code === 0 || is_string($code) || $code === "") {
         $code = 500;
     }
     http_response_code($code);
 
+    if (Request::expectsJson()) {
+        header('Content-Type: application/json; charset=utf-8');
+        $response = [
+            'success' => false,
+            'code' => $code,
+            'message' => $message,
+        ];
+
+        if (is_dev()) {
+            $response['file'] = $file;
+            $response['line'] = $line;
+            $response['trace'] = $trace;
+        }
+
+        echo json_encode(
+            $response,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
+
+        exit;
+    }
     view_internal('_error', [
         'code' => $code,
         'message' => $message,

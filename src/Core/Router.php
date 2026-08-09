@@ -182,7 +182,7 @@ class Router {
 
     if ($matchedRoute === null) {
         // no route matched at all - 404
-        abort("Page not found", 404);
+        abort("Route \"{$uri}\" not found", 404);
     }
 
     $controller = Router::$routes[$requestType][$matchedRoute];

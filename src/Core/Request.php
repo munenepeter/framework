@@ -184,11 +184,41 @@ class Request {
      * 
      * @return bool
      */
-    public function isAjax(): bool {
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-               strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    public static function isAjax(): bool {
+        // jQuery / XMLHttpRequest convention
+        if (
+            isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+        ) {
+            return true;
+        }
+
+        // Fetch Metadata
+        if (
+            isset($_SERVER['HTTP_SEC_FETCH_DEST']) &&
+            strtolower($_SERVER['HTTP_SEC_FETCH_DEST']) === 'empty'
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
+    /**
+     * Check if request is AJAX
+     * 
+     * @return bool
+     */
+    public static function expectsJson(): bool {
+        if (!isset($_SERVER['HTTP_ACCEPT'])) {
+            return false;
+        }
+
+        $accept = strtolower($_SERVER['HTTP_ACCEPT']);
+
+        return str_contains($accept, 'application/json') ||
+            str_contains($accept, 'text/json');
+    }
     /**
      * Get request headers
      * 
@@ -305,9 +335,9 @@ class Request {
      * @return string
      */
     public function ip(): string {
-        return $_SERVER['HTTP_CLIENT_IP'] 
-            ?? $_SERVER['HTTP_X_FORWARDED_FOR'] 
-            ?? $_SERVER['REMOTE_ADDR'] 
+        return $_SERVER['HTTP_CLIENT_IP']
+            ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+            ?? $_SERVER['REMOTE_ADDR']
             ?? '';
     }
 
