@@ -168,42 +168,35 @@ class Router {
      * @return mixed Can return any type depending on the called route
      */
     public function direct(string $uri, string $requestType): mixed {
-        $params = [];
-        $regexUri = '';
+    $params = [];
+    $matchedRoute = null;
 
-        foreach (Router::$routes[$requestType] as $route => $controller) {
-            if (preg_match("%^{$route}$%", $uri, $matches) === 1) {
-                $regexUri = $route;
-                Router::$routes[$requestType][$regexUri] = $controller;
-
-                unset($matches[0]);
-                $params = $matches;
-                break;
-            }
-        }
-
-        if (is_callable(Router::$routes[$requestType][$regexUri])) {
-            return Router::$routes[$requestType][$regexUri](...$params);
-        }
-
-        if (is_array(Router::$routes[$requestType][$regexUri])) {
-            return $this->callAction(
-                $params,
-                ...Router::$routes[$requestType][$regexUri]
-            );
-        }
-        if (!empty($regexUri) && $regexUri !== "") {
-            return $this->callAction(
-                $params,
-                ...explode('@', Router::$routes[$requestType][$regexUri])
-            );
-        } else {
-            return $this->callAction(
-                $params,
-                ...explode('@', Router::$routes[$requestType][$uri])
-            );
+    foreach (Router::$routes[$requestType] ?? [] as $route => $controller) {
+        if (preg_match("%^{$route}$%", $uri, $matches) === 1) {
+            $matchedRoute = $route;
+            unset($matches[0]);
+            $params = $matches;
+            break;
         }
     }
+
+    if ($matchedRoute === null) {
+        // no route matched at all - 404
+        abort("Page not found", 404);
+    }
+
+    $controller = Router::$routes[$requestType][$matchedRoute];
+
+    if (is_callable($controller)) {
+        return $controller(...$params);
+    }
+
+    if (is_array($controller)) {
+        return $this->callAction($params, ...$controller);
+    }
+
+    return $this->callAction($params, ...explode('@', $controller));
+}
 
     /**
      * Calls a controller action
