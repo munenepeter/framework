@@ -171,11 +171,14 @@ class Router {
     $params = [];
     $matchedRoute = null;
 
+    // Normalize incoming URI (e.g., "/" -> "", "/projects/foo" -> "projects/foo")
+    $uri = trim($uri, '/');
+
     foreach (Router::$routes[$requestType] ?? [] as $route => $controller) {
         if (preg_match("%^{$route}$%", $uri, $matches) === 1) {
             $matchedRoute = $route;
             unset($matches[0]);
-            $params = $matches;
+            $params = array_values($matches);
             break;
         }
     }
