@@ -312,10 +312,9 @@ class QueryBuilder {
             $stmt->execute($bindings);
             return $stmt;
         } catch (\PDOException $e) {
-            logger("Error", 'QueryBuilder: ' . $e->getMessage() . PHP_EOL . $sql);
             throw new \RuntimeException(
                 "Database error: " . $e->getMessage(),
-                (int) $e->getCode(),
+                500,
                 $e
             );
         }

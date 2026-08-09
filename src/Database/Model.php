@@ -95,7 +95,7 @@ abstract class Model {
         );
     }
 
-    private static function tableName(): string {
+    protected static function tableName(): string {
         if (static::$table !== '') {
             return static::$table;
         }
