@@ -27,7 +27,6 @@ if (!defined('BASE_URL')) {
  */
 function checkView(string $filename) {
     if (!file_exists($filename)) {
-        logger("Error", "The view for {$filename} appears to be missing");
         throw new \Exception("The requested view file '{$filename}' cannot be found", 404);
     }
 }
