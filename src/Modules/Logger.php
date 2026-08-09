@@ -2,42 +2,34 @@
 
 namespace Tabel\Modules;
 
-use Tabel\Core\Cache;
 use Tabel\Core\Request;
 
-
+/**
+ * Writes application logs in a Laravel-style single-line format:
+ *
+ *   [2026-08-09 12:34:56] production.ERROR: Something went wrong {"method":"GET","uri":"/foo","ip":"1.2.3.4","agent":"..."}
+ *
+ * Each entry is kept to a single line
+ */
 class Logger {
 
     protected static $logBuffer = [];
-    protected static $cachedUserInfo = null;
-    public static $logFile = \APP_ROOT . "/storage/logs/tabel.log";
+    public static string $logFile = \APP_ROOT . "/storage/logs/tabel.log";
 
     public static function log(string $level, string $msg) {
+        $time = date('Y-m-d H:i:s');
+        $env = self::environment();
+        $levelName = strtoupper($level);
 
-        if (Request::isCli()) {
-            $userinfo = null;
-        } else {
-            $userinfo = self::getUserInfo();
-        }
+        // remove newlines so each log entry stays on one line
+        $message = str_replace(["\r\n", "\n", "\r"], ' ', $msg);
 
-        $log = [
-            'id' => md5(time()),
-            'level' => $level,
-            'time' => date("D, d M Y H:i:s"),
-            "more" => [
-                "method" => Request::method(),
-                "uri" => '/' . Request::uri(),
-                "remote_addr" => $_SERVER['REMOTE_ADDR'] ?? "N/A",
-                "region" => $userinfo->region_name ?? "N/A",
-                "country" => $userinfo->country_name ?? "N/A",
-                "city" => $userinfo->city ?? "N/A",
-                "provider" => $userinfo->organisation ?? "N/A",
-                "time_zone" => $userinfo->time_zone ?? "N/A",
-                "agent" => $_SERVER['HTTP_USER_AGENT'] ?? "N/A"
-            ],
-            "description" => nl2br($msg)
-        ];
-        self::$logBuffer[] = json_encode($log);
+        $context = self::buildContext();
+        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
+
+        $line = "[{$time}] {$env}.{$levelName}: {$message}{$contextStr}";
+
+        self::$logBuffer[] = $line;
         self::writeBufferToFile();
     }
 
@@ -54,33 +46,34 @@ class Logger {
         self::log("Warning", $log);
     }
 
-    protected static function getUserInfo() {
-        if (self::$cachedUserInfo === null) {
-            // Check if cached user info exists
-            $cachedUserInfo = Cache::get('user_info');
-
-            if ($cachedUserInfo !== null) {
-                self::$cachedUserInfo = json_decode($cachedUserInfo);
-            } else {
-                // Fetch user info from API
-                $response = @file_get_contents(
-                    'http://ip-api.io/json/' . $_SERVER['REMOTE_ADDR'],
-                    false,
-                    stream_context_create([
-                        'http' => [
-                            'ignore_errors' => true,
-                        ],
-                    ])
-                );
-
-                // Cache user info for future requests
-                self::$cachedUserInfo = json_decode($response);
-                Cache::put('user_info', $response, 3600); // Cache for 1 hour
-
-            }
+    /**
+     * Resolve the current environment name for the log channel prefix,
+     * e.g. "production", "local".
+     */
+    protected static function environment(): string {
+        if (defined('APP_ENV')) {
+            return \APP_ENV;
         }
 
-        return self::$cachedUserInfo;
+        $env = getenv('APP_ENV');
+        return $env !== false && $env !== '' ? $env : 'production';
+    }
+
+    /**
+     * Build request context for non-CLI requests. CLI runs omit this
+     * entirely since there's no HTTP request to describe.
+     */
+    protected static function buildContext(): array {
+        if (Request::isCli()) {
+            return [];
+        }
+
+        return [
+            'method' => Request::method(),
+            'uri' => '/' . Request::uri(),
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'N/A',
+            // 'agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'N/A',
+        ];
     }
 
     protected static function writeBufferToFile() {
@@ -101,14 +94,15 @@ class Logger {
             self::writeBufferToFile();
         }
     }
+
     public static function getLogs(): array {
         $data = file_get_contents(self::$logFile);
 
-        //separate the logs by line
         $logs = explode(PHP_EOL, $data);
 
-        //remove 1st empty line
+        //remove trailing empty line
         array_pop($logs);
+
         //return latest on 1st
         return array_reverse($logs);
     }
@@ -127,7 +121,7 @@ class Logger {
         }
         //recreate the file
         $newLogFile = fopen(self::$logFile, "w") or die("Unable to open file!");
-        logger("Info", "System: Logs have been deleted by {$user}");
+        logger("Info", "System: Logs have been deleted by {$user} at " . date('Y-m-d H:i:s'));
         fclose($newLogFile);
 
         return true;
