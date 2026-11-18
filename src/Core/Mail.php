@@ -1,6 +1,6 @@
 <?php
 
-namespace Tabel\Core\Mantle;
+namespace Tabel\Core;
 
 use PHPMailer\PHPMailer\PHPMailer;
 

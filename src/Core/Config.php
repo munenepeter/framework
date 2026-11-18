@@ -7,7 +7,7 @@ use Tabel\Modules\Logger;
 
 class Config {
     protected static $env_file = APP_ROOT . '.env';
-    protected static $cache_key = 'config_cache';
+    protected static $cache_key = 'config_cache_v2';
     protected static $config = [];
 
     /**
@@ -85,12 +85,20 @@ class Config {
         $envLines = file(self::$env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         foreach ($envLines as $line) {
+            $line = trim($line);
+
+            // Blank lines and comments. Without this, "# DB_HOST=x" was parsed
+            // as the key "# DB" and leaked into the config.
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+
             if (strpos($line, '_') !== false) {
                 [$parent, $childWithValue] = explode('_', $line, 2);
 
                 if (strpos($childWithValue, '=') !== false) {
                     [$child, $value] = explode('=', $childWithValue, 2);
-                    $config[strtolower($parent)][strtolower($child)] = $value;
+                    $config[strtolower($parent)][strtolower($child)] = self::unquote($value);
                 }
             }
         }
@@ -102,6 +110,20 @@ class Config {
         }
 
         return $config;
+    }
+
+    /**
+     * Strip one pair of matching surrounding quotes: APP_NAME="Tabel" -> Tabel.
+     * The quotes used to be kept, so config('app.name') returned "\"Tabel\"".
+     */
+    protected static function unquote(string $value): string {
+        $value = trim($value);
+        $len = strlen($value);
+
+        if ($len >= 2 && ($value[0] === '"' || $value[0] === "'") && $value[$len - 1] === $value[0]) {
+            return substr($value, 1, -1);
+        }
+        return $value;
     }
 
     /**

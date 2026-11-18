@@ -77,8 +77,13 @@ class Logger {
     }
 
     protected static function writeBufferToFile() {
-        if (!file_exists(self::$logFile)) {
-            mkdir(\APP_ROOT . "/storage/logs", 0755, true);
+        // Check the DIRECTORY, not the file. This used to test for the log file and
+        // then mkdir() the folder, so on a fresh checkout (folder present, file not
+        // yet) mkdir() warned "File exists" and the error handler turned that into
+        // a 500 on the very first request.
+        $dir = dirname(self::$logFile);
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new \RuntimeException("Cannot create log directory: {$dir}");
         }
 
         $file = fopen(self::$logFile, 'a+', 1);

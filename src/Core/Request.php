@@ -205,7 +205,68 @@ class Request {
     }
 
     /**
-     * Check if request is AJAX
+     * Is this a request made by htmx (the HX-Request header)?
+     * Use it to answer with an HTML fragment instead of a whole document.
+     */
+    public static function isHtmx(): bool {
+        return ($_SERVER['HTTP_HX_REQUEST'] ?? '') === 'true';
+    }
+
+    /**
+     * Was the request made by an hx-boost'ed link or form?
+     */
+    public static function isBoosted(): bool {
+        return ($_SERVER['HTTP_HX_BOOSTED'] ?? '') === 'true';
+    }
+
+    /**
+     * The id of the element htmx will swap the response into (HX-Target),
+     * or null when absent. Lets one URL return a different fragment
+     * depending on where it is going.
+     */
+    public static function htmxTarget(): ?string {
+        $target = $_SERVER['HTTP_HX_TARGET'] ?? '';
+        return $target !== '' ? $target : null;
+    }
+
+    /**
+     * A raw (NOT html-escaped) value from the query string.
+     * input() escapes for output; use this when you need to compare or search
+     * and escape later, once, at output time.
+     */
+    public function query(string $key, mixed $default = null): mixed {
+        return $_GET[$key] ?? $default;
+    }
+
+    /**
+     * Did this request come from our own origin? Cheap CSRF guard for
+     * state-changing requests. Trusts Sec-Fetch-Site where the browser sends
+     * it, falls back to comparing Origin with Host, and lets clients that send
+     * neither (curl, server-to-server) through.
+     */
+    public static function isSameOrigin(): bool {
+        $site = strtolower($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '');
+        if ($site !== '') {
+            return $site === 'same-origin' || $site === 'none';
+        }
+
+        $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+        if ($origin === '') {
+            return true;
+        }
+
+        $host = parse_url($origin, PHP_URL_HOST);
+        if (!is_string($host)) {
+            return false; // e.g. "Origin: null"
+        }
+        $port = parse_url($origin, PHP_URL_PORT);
+        $originHost = strtolower($host . ($port ? ':' . $port : ''));
+
+        return hash_equals(strtolower($_SERVER['HTTP_HOST'] ?? ''), $originHost);
+    }
+
+    /**
+     * Does the client want JSON back?
      * 
      * @return bool
      */

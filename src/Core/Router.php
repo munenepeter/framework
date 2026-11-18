@@ -122,7 +122,8 @@ class Router {
      * @param string $class Name of the controller class for the resource
      */
     public static function resource(string $uri, string $class) {
-        $uri = static::buildUri($uri);
+        // NB: get()/post() apply the group prefix themselves. Building the URI
+        // here as well doubled the prefix inside Router::group().
 
         //index //get
         static::get($uri, "{$class}@index");
@@ -143,9 +144,7 @@ class Router {
      * @param string|callable|array $controller Controller and action separated by "@" symbol
      */
     public static function get(string $uri, string|callable|array $controller) {
-        $uri = static::buildUri($uri);
-        $uri = preg_replace('/{[^}]+}/', '(.+)', $uri);
-        static::$routes['GET'][$uri] = $controller;
+        static::$routes['GET'][static::compile($uri)] = $controller;
     }
 
     /**
@@ -155,9 +154,20 @@ class Router {
      * @param string|callable|array $controller Controller and action separated by "@" symbol
      */
     public static function post(string $uri, string|callable|array $controller) {
-        $uri = static::buildUri($uri);
-        $uri = preg_replace('/{[^}]+}/', '(.+)', $uri);
-        static::$routes['POST'][$uri] = $controller;
+        static::$routes['POST'][static::compile($uri)] = $controller;
+    }
+
+    /**
+     * Apply the group prefix and turn {placeholders} into capture groups.
+     *
+     * A placeholder matches ONE path segment. It used to be `(.+)`, which also
+     * matched slashes, so `/apps/{app}` swallowed `/apps/books/invoices` and a
+     * more specific route registered later could never be reached.
+     *
+     * Hand-written regex in a route (e.g. `files/(.+)`) is left untouched.
+     */
+    protected static function compile(string $uri): string {
+        return preg_replace('/{[^}]+}/', '([^/]+)', static::buildUri($uri));
     }
 
     /**

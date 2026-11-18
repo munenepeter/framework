@@ -10,6 +10,9 @@ use Tabel\Database\QueryBuilder;
 class App {
     protected $container = [];
 
+    /** @var array<string, \Closure> services built on first get(), not at boot */
+    protected $lazy = [];
+
     public $path = '';
     private static $instance;
     protected $booted = false;
@@ -41,6 +44,13 @@ class App {
     }
 
     public function get($key) {
+        // Build lazy services (pdo, db) the first time somebody asks for them.
+        if (is_string($key) && isset($this->lazy[$key])) {
+            $factory = $this->lazy[$key];
+            unset($this->lazy[$key]);
+            $this->container[$key] = $factory();
+        }
+
         return array_get($this->container, $key);
     }
 
@@ -51,6 +61,12 @@ class App {
         $this->bind('app-path', $this->path);
         $this->bind('config', Config::load());
         $this->bind('middlewares', []);
+
+        // APP_TIMEZONE was parsed but never applied, so date() ran in UTC.
+        $timezone = $this->get('config.app.timezone');
+        if (is_string($timezone) && in_array($timezone, timezone_identifiers_list(), true)) {
+            date_default_timezone_set($timezone);
+        }
 
         $this->boot();
 
@@ -68,11 +84,13 @@ class App {
             return;
         }
 
-        // Build a raw PDO connection and store it in the container.
-        // QueryBuilder and Model both resolve it via app()->get('pdo').
-        $pdo = Connection::make($this->get('config.db'));
-        $this->bind('pdo', $pdo);
-        $this->bind('db', QueryBuilder::getInstance($pdo));
+        // PDO and the QueryBuilder are registered lazily: the connection is
+        // opened the first time app()->get('pdo'|'db') is called. A page that
+        // never touches the database (the desktop shell) keeps working when
+        // the database server is down or not configured yet.
+        $dbConfig = $this->get('config.db') ?? [];
+        $this->lazy['pdo'] = fn() => Connection::make($dbConfig);
+        $this->lazy['db']  = fn() => QueryBuilder::getInstance($this->get('pdo'));
 
         $this->booted = true;
     }

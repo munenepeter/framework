@@ -47,7 +47,50 @@ function view(string $filename, array $data = []) {
 
     checkView($filename);
 
-    return require_once $filename;
+    // require, not require_once: a view rendered twice in one request (a row
+    // partial in a loop, a fragment after a page) printed nothing the 2nd time.
+    return require $filename;
+}
+
+/**
+ * Include a view file as a partial: echoes it, in its own variable scope.
+ *
+ * Unlike view(), only $data is visible inside - nothing leaks in from or out
+ * to the caller - and it can be called any number of times.
+ *
+ * @param string $name Path under views/, without ".view.php" ("partials/head")
+ * @param array  $data Variables for the partial
+ */
+function partial(string $name, array $data = []): void {
+    $file = app()->get('app-path') . "/views/{$name}.view.php";
+
+    checkView($file);
+
+    (static function (string $__file, array $__data): void {
+        extract($__data, EXTR_SKIP);
+        require $__file;
+    })($file, $data);
+}
+
+/**
+ * Same as partial(), but returns the markup instead of echoing it.
+ */
+function render(string $name, array $data = []): string {
+    ob_start();
+    try {
+        partial($name, $data);
+    } catch (\Throwable $e) {
+        ob_end_clean();
+        throw $e;
+    }
+    return (string) ob_get_clean();
+}
+
+/**
+ * Escape a value for HTML output (text or attribute).
+ */
+function e(mixed $value): string {
+    return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
 /**
@@ -122,10 +165,12 @@ function view_internal(string $filename, array $data = []) {
 
     checkView($filename);
 
-    return require_once $filename;
+    return require $filename;
 }
-function app(): App {
-    return App::getInstance(getcwd());
+if (!function_exists('app')) {
+    function app(): App {
+        return App::getInstance(getcwd());
+    }
 }
 
 
@@ -191,37 +236,39 @@ function slug(string $string) {
  * 
  * @return bool|object Session
  */
-function auth() {
+if (!function_exists('auth')) {
+    function auth() {
 
-    if (Session::get('loggedIn') === NULL || Session::get('loggedIn') === false) {
-        return false;
+        if (Session::get('loggedIn') === NULL || Session::get('loggedIn') === false) {
+            return false;
+        }
+
+        $class = new class {
+
+            public $username;
+            public $email;
+            public $id;
+
+            public function __construct() {
+                $user = Auth::user();
+                $this->username = $user->username ?? null;
+                $this->email = $user->email ?? null;
+                $this->id =  $user->id ?? null;
+            }
+            public function __get($name) {
+                return $name;
+            }
+            public function __set($name, $value) {
+                $this->$name = $value;
+            }
+            public function logout() {
+                Auth::logout(Auth::user());
+                redirect('/');
+            }
+        };
+
+        return $class;
     }
-
-    $class = new class {
-
-        public $username;
-        public $email;
-        public $id;
-
-        public function __construct() {
-            $user = Auth::user();
-            $this->username = $user->username ?? null;
-            $this->email = $user->email ?? null;
-            $this->id =  $user->id ?? null;
-        }
-        public function __get($name) {
-            return $name;
-        }
-        public function __set($name, $value) {
-            $this->$name = $value;
-        }
-        public function logout() {
-            Auth::logout(Auth::user());
-            redirect('/');
-        }
-    };
-
-    return $class;
 }
 /**
  * plural
@@ -374,27 +421,54 @@ function time_ago($datetime, $full = false) {
     return $string ? implode(', ', $string) . ' ago' : 'just now';
 }
 /**
- * asset helper
- * 
- * @param $dir director to be returned in respect to the static dir
- * 
- * @return void  echo Path to the requested resource
+ * asset_url
+ *
+ * Root-relative URL of a file in public/, fingerprinted with its mtime so it
+ * can be cached forever and still update the moment the file changes:
+ *
+ *   asset_url('css/main.css')  ->  /css/main.css?v=1763375210
+ *
+ * Root-relative on purpose. The old asset() built "BASE_URL:PORT/path" from
+ * SERVER_NAME, which breaks behind a proxy, in Docker, or on any non-default
+ * port the server name does not know about.
+ */
+function asset_url(string $path): string {
+    $path = '/' . ltrim($path, '/');
+    $root = defined('APP_ROOT') ? APP_ROOT : getcwd();
+    $file = rtrim((string) $root, '/\\') . '/public' . $path;
+
+    return $path . (is_file($file) ? '?v=' . filemtime($file) : '');
+}
+
+/**
+ * asset helper (echoes; kept for existing views: <?php asset('js/app.js') ?>)
+ *
+ * @param string $path file relative to public/
  */
 function asset(string $path): void {
-    $path = ltrim($path, '/');
+    echo asset_url($path);
+}
 
-    if (Request::isCli()) {
-        echo "/$path";
-        return;
+/**
+ * absolute_url
+ *
+ * Absolute URL for og:image, canonical, JSON-LD and anywhere else a crawler or
+ * link unfurler needs one. Set APP_URL in .env in production; without it the
+ * Host header is used, sanitised, because it is client-controlled.
+ */
+function absolute_url(string $path = '/'): string {
+    $base = rtrim((string) (getenv('APP_URL') ?: ($_ENV['APP_URL'] ?? '')), '/');
+
+    if ($base === '') {
+        $https  = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $host   = (string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost');
+        if (!preg_match('/^[A-Za-z0-9.\-]+(:\d{1,5})?$/', $host)) {
+            $host = 'localhost';
+        }
+        $base = ($https ? 'https' : 'http') . '://' . $host;
     }
 
-    $port = $_SERVER['SERVER_PORT'] ?? '';
-
-    if (is_dev() && !in_array($port, ['80', '443'])) {
-        echo BASE_URL . ":{$port}/{$path}";
-    } else {
-        echo BASE_URL . "/{$path}";
-    }
+    return $base . '/' . ltrim($path, '/');
 }
 function get_perc($total, $number) {
     if ($total > 0) {
@@ -404,8 +478,10 @@ function get_perc($total, $number) {
     }
 }
 
-function logger(string $level, string $message) {
-    Logger::log($level, $message);
+if (!function_exists('logger')) {
+    function logger(string $level, string $message) {
+        Logger::log($level, $message);
+    }
 }
 
 function request(string $key, $default = null) {
@@ -423,12 +499,8 @@ function request(string $key, $default = null) {
 function session_get($value) {
     return Session::get($value);
 }
-function is_dev() {
-    if (app()->get('config.app.env') === 'development') {
-        return true;
-    } elseif (app()->get('config.app.env') === 'production') {
-        return false;
-    }
+function is_dev(): bool {
+    return app()->get('config.app.env') === 'development';
 }
 
 /**
