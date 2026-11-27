@@ -240,6 +240,7 @@ class QueryBuilder {
      * @param  int         $currentPage  1-indexed
      * @param  array       $where        optional [ column, operator, value ] triple
      * @param  string|null $fetchClass
+     * @param  string      $orderBy      column to sort by, newest first (default created_at)
      * @return array{total: int, items: array}
      */
     public function paginateTable(
@@ -247,8 +248,12 @@ class QueryBuilder {
         int $perPage,
         int $currentPage,
         array $where = [],
-        ?string $fetchClass = null
+        ?string $fetchClass = null,
+        string $orderBy = 'created_at'
     ): array {
+        if (!preg_match('/^[A-Za-z0-9_]+$/', $orderBy)) {
+            throw new \InvalidArgumentException("Invalid order column: {$orderBy}");
+        }
         $bindings  = [];
         $whereSql  = '';
 
@@ -270,15 +275,12 @@ class QueryBuilder {
         // Query 2: page slice
         $offset = max(0, ($currentPage - 1) * $perPage);
         $dataSql = "SELECT * FROM `{$table}` {$whereSql}
-                    ORDER BY `created_at` DESC
-                    LIMIT :limit OFFSET :offset";
+                    ORDER BY `{$orderBy}` DESC
+                    LIMIT " . max(1, $perPage) . " OFFSET " . $offset;
 
-        // Named + positional can conflict in some drivers; use a fresh bindings map
-        $dataBindings = $bindings;
-        $dataBindings[':limit']  = $perPage;
-        $dataBindings[':offset'] = $offset;
-
-        $items = $this->select($dataSql, $dataBindings, $fetchClass);
+        // LIMIT / OFFSET are inlined as ints: PDO binds execute() values as strings, and
+        // MySQL (native prepares) rejects a quoted LIMIT.
+        $items = $this->select($dataSql, $bindings, $fetchClass);
 
         return ['total' => $total, 'items' => $items];
     }

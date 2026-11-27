@@ -21,6 +21,14 @@ abstract class MainController {
     public function request() {
         return Request::getInstance();
     }
+    /** Check the CSRF token by hand (the Router already does this for every POST when APP_CSRF=true). */
+    public function verifyCsrf(): void {
+        \Tabel\Modules\Csrf::verify();
+    }
+    /** Input exactly as sent (trimmed, not HTML-escaped). Escape on output with e(). */
+    public function raw(string $key, mixed $default = null): mixed {
+        return $this->request()->raw($key, $default);
+    }
     public function validate(array $rules): bool {
         return $this->request()->validate($rules);
     }

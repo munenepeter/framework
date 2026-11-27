@@ -72,10 +72,34 @@ class Request {
         }
 
         if (is_array($this->data[$key])) {
-            return array_map([$this, 'sanitize'], $this->data[$key]);
+            $clean = static function ($v) use (&$clean) {
+                return is_array($v)
+                    ? array_map($clean, $v)
+                    : htmlspecialchars(trim((string) $v), ENT_QUOTES, 'UTF-8');
+            };
+            return $clean($this->data[$key]);
         }
 
         return $this->sanitize($this->data[$key]) ?? $default;
+    }
+
+    /**
+     * Get an input value as sent (trimmed, NOT HTML-escaped). Escape when you output it
+     * (e() in views), not when you store it: input() escapes on the way in, which stores
+     * "&amp;" for "&" and double-escapes in views that call e().
+     *
+     * @param string $key
+     * @param mixed  $default
+     * @return mixed
+     */
+    public function raw(string $key, mixed $default = null): mixed {
+        if (!isset($this->data[$key])) {
+            return $default;
+        }
+        $trim = static function ($v) use (&$trim) {
+            return is_array($v) ? array_map($trim, $v) : trim((string) $v);
+        };
+        return $trim($this->data[$key]);
     }
 
     /**
@@ -176,7 +200,20 @@ class Request {
      * @return string
      */
     public static function method(): string {
-        return self::isCli() ? 'CLI' : $_SERVER['REQUEST_METHOD'];
+        if (self::isCli()) {
+            return 'CLI';
+        }
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+
+        // HTML forms only send GET and POST: let a POST carry the real verb in a _method
+        // field (or an X-HTTP-Method-Override header) for PUT / PATCH / DELETE routes.
+        if ($method === 'POST') {
+            $override = strtoupper((string) ($_POST['_method'] ?? $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'] ?? ''));
+            if (in_array($override, ['PUT', 'PATCH', 'DELETE'], true)) {
+                return $override;
+            }
+        }
+        return $method;
     }
 
     /**

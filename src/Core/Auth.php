@@ -18,24 +18,24 @@ class Auth {
      */
     public static function login(string $email, string $password): bool {
         if (self::isLockedOut($email)) {
-            Session::make('_msg_error', "Too many login attempts. Please try again later.");
+            Session::set('_msg_error', "Too many login attempts. Please try again later.");
             return false;
         }
 
         try {
-            $user = User::where('email', $email)->first();
+            $user = User::firstWhere('email', $email);
             
             if (!$user) {
                 self::incrementLoginAttempts($email);
                 logger("Warning", "Login attempt with non-existent email: {$email}");
-                Session::make('_msg_error', "Invalid credentials");
+                Session::set('_msg_error', "Invalid credentials");
                 return false;
             }
 
             if (!password_verify($password, $user->password)) {
                 self::incrementLoginAttempts($email);
                 logger("Warning", "Failed login attempt for email: {$email}");
-                Session::make('_msg_error', "Invalid credentials");
+                Session::set('_msg_error', "Invalid credentials");
                 return false;
             }
 
@@ -46,12 +46,12 @@ class Auth {
             self::setUserSession($user);
             
             logger("Info", "Successful login for {$email}");
-            Session::make('_msg_success', "Login successful");
+            Session::set('_msg_success', "Login successful");
             return true;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             logger("Error", "Login error: " . $e->getMessage());
-            Session::make('_msg_error', "An error occurred during login");
+            Session::set('_msg_error', "An error occurred during login");
             return false;
         }
     }
@@ -65,15 +65,10 @@ class Auth {
     public static function logout(User $user): void {
         try {
             // Clear session data
-            Session::make('loggedIn', false);
-            Session::make('user_id', $user->id);
-            Session::make('email', $user->email);
-            Session::make('last_activity', null);
-
-            logger("Info", "User logged out: $user");
+            logger("Info", "User logged out: {$user->email}");
             Session::destroy();
         } catch (\Exception $e) {
-            Session::make('_msg_error', "An error occurred during logout");
+            Session::set('_msg_error', "An error occurred during logout");
             logger("Error", "Logout error: " . $e->getMessage());
         }
     }
@@ -128,13 +123,12 @@ class Auth {
      * @return void
      */
     private static function setUserSession(User $user): void {
-        Session::make('loggedIn', true);
-        Session::make('user_id', $user->id);
-        Session::make('email', $user->email);
-        Session::make('last_activity', time());
-        
-        // Regenerate session ID for security
-        session_regenerate_id(true);
+        // New session id first (prevents fixation), then the identity.
+        Session::regenerate();
+        Session::set('loggedIn', true);
+        Session::set('user_id', $user->id);
+        Session::set('email', $user->email);
+        Session::set('last_activity', time());
     }
 
     /**
@@ -165,8 +159,8 @@ class Auth {
      */
     private static function incrementLoginAttempts(string $email): void {
         $attempts = Session::get("login_attempts_{$email}", 0);
-        Session::make("login_attempts_{$email}", $attempts + 1);
-        Session::make("last_attempt_{$email}", time());
+        Session::set("login_attempts_{$email}", $attempts + 1);
+        Session::set("last_attempt_{$email}", time());
     }
 
     /**

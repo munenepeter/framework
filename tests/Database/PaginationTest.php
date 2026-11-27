@@ -322,4 +322,50 @@ class PaginationTest extends TestCase {
         // clamped to last page (1), so all 5 items returned
         $this->assertSame(range(1, 5), $result->items());
     }
+
+    // LIMIT / OFFSET must be inlined ints (MySQL rejects a quoted LIMIT under native prepares)
+    public function test_paginateTable_inlines_limit_and_offset(): void {
+        $spy = new class('sqlite::memory:') extends \PDO {
+            public array $sql = [];
+            #[\ReturnTypeWillChange]
+            public function prepare(string $query, array $options = []) {
+                $this->sql[] = $query;
+                return parent::prepare($query, $options);
+            }
+        };
+        $spy->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $spy->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        $spy->exec('CREATE TABLE posts (id INTEGER PRIMARY KEY, title TEXT, created_at TEXT)');
+        for ($i = 1; $i <= 12; $i++) {
+            $spy->exec("INSERT INTO posts (title, created_at) VALUES ('P{$i}', datetime('now'))");
+        }
+
+        $ref = new \ReflectionClass(QueryBuilder::class);
+        $prop = $ref->getProperty('instance');
+        $prop->setAccessible(true);
+        $prop->setValue(null, null);
+
+        $result = QueryBuilder::getInstance($spy)->paginateTable('posts', 5, 2);
+
+        $this->assertCount(5, $result['items']);
+        $joined = implode("\n", $spy->sql);
+        $this->assertStringContainsString('LIMIT 5 OFFSET 5', $joined);
+        $this->assertStringNotContainsString(':limit', $joined);
+    }
+
+    public function test_paginateTable_can_order_by_another_column(): void {
+        self::$pdo->exec('CREATE TABLE notes (id INTEGER PRIMARY KEY, body TEXT)');
+        for ($i = 1; $i <= 7; $i++) {
+            self::$pdo->exec("INSERT INTO notes (body) VALUES ('n{$i}')");
+        }
+        $result = QueryBuilder::getInstance(self::$pdo)->paginateTable('notes', 3, 1, [], null, 'id');
+
+        $this->assertSame(7, $result['total']);
+        $this->assertSame('n7', ((array) $result['items'][0])['body']);
+    }
+
+    public function test_paginateTable_rejects_unsafe_order_column(): void {
+        $this->expectException(\InvalidArgumentException::class);
+        QueryBuilder::getInstance(self::$pdo)->paginateTable('posts', 5, 1, [], null, 'id; DROP TABLE posts');
+    }
 }

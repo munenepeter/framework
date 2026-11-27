@@ -14,7 +14,10 @@ class Router {
      */
     public static $routes = [
         'GET' => [],
-        'POST' => []
+        'POST' => [],
+        'PUT' => [],
+        'PATCH' => [],
+        'DELETE' => []
     ];
 
     /**
@@ -157,6 +160,21 @@ class Router {
         static::$routes['POST'][static::compile($uri)] = $controller;
     }
 
+    /** Defines a PUT route (reached by POSTing a _method=PUT field or X-HTTP-Method-Override header) */
+    public static function put(string $uri, string|callable|array $controller) {
+        static::$routes['PUT'][static::compile($uri)] = $controller;
+    }
+
+    /** Defines a PATCH route (see put()) */
+    public static function patch(string $uri, string|callable|array $controller) {
+        static::$routes['PATCH'][static::compile($uri)] = $controller;
+    }
+
+    /** Defines a DELETE route (see put()) */
+    public static function delete(string $uri, string|callable|array $controller) {
+        static::$routes['DELETE'][static::compile($uri)] = $controller;
+    }
+
     /**
      * Apply the group prefix and turn {placeholders} into capture groups.
      *
@@ -199,6 +217,11 @@ class Router {
     }
 
     $controller = Router::$routes[$requestType][$matchedRoute];
+
+    // CSRF: when APP_CSRF is on, every state-changing request must carry the session token.
+    if (\Tabel\Modules\Csrf::shouldVerify($requestType)) {
+        \Tabel\Modules\Csrf::verify();
+    }
 
     if (is_callable($controller)) {
         return $controller(...$params);

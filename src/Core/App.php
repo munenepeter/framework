@@ -130,6 +130,12 @@ class App {
     }
 
     private function handleHttp(): void {
+        // Auth, flash messages and CSRF all live in the session, so start it for every web request.
+        // SESSION_NAME (optional) renames the cookie; defaults to PHP's.
+        \Tabel\Modules\Session::start(array_filter([
+            'name' => $this->get('config.session.name'),
+        ]));
+
         try {
             Router::load(
                 $this->get('web-routes'),

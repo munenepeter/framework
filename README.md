@@ -74,3 +74,7 @@ Current coverage:
 ## License
 
 Be free, you can do anything with the code
+
+## Changes
+
+See [CHANGELOG.md](CHANGELOG.md) for the latest fixes (sessions, `Auth`, CSRF, raw input, pagination, log viewer, PUT/PATCH/DELETE routes).

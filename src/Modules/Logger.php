@@ -101,7 +101,10 @@ class Logger {
     }
 
     public static function getLogs(): array {
-        $data = file_get_contents(self::$logFile);
+        if (!is_readable(self::$logFile)) {
+            return [];
+        }
+        $data = (string) file_get_contents(self::$logFile);
 
         $logs = explode(PHP_EOL, $data);
 

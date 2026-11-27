@@ -248,12 +248,14 @@ if (!function_exists('auth')) {
             public $username;
             public $email;
             public $id;
+            public $role;
 
             public function __construct() {
                 $user = Auth::user();
                 $this->username = $user->username ?? null;
                 $this->email = $user->email ?? null;
                 $this->id =  $user->id ?? null;
+                $this->role = $user->role ?? null;
             }
             public function __get($name) {
                 return $name;
@@ -1012,4 +1014,18 @@ function getErrorMessages() {
             'developer_message' => 'Access denied for the specified user. Check database username and password.'
         ]
     ];
+}
+
+if (!function_exists('csrf_token')) {
+    /** The session's CSRF token, e.g. for a <meta> tag read by fetch(): headers: {'X-CSRF-TOKEN': token}. */
+    function csrf_token(): string {
+        return \Tabel\Modules\Csrf::token();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    /** Hidden input to put inside every POST form (see APP_CSRF). */
+    function csrf_field(): string {
+        return \Tabel\Modules\Csrf::field();
+    }
 }

@@ -2,34 +2,32 @@
 
 namespace Tabel\Controllers;
 
+use Tabel\Core\Auth;
 use Tabel\Modules\Logger;
-use Tabel\Controllers\MainController;
 
+/**
+ * Log viewer. Restricted to signed-in users with the admin or superadmin role (users.role),
+ * because logs can contain emails, queries and stack traces.
+ */
 class SystemController extends MainController {
 
     public function __construct() {
-        //   $this->middleware('auth');
+        parent::__construct();
+        $this->middleware('admin');
     }
+
     public function index() {
         return view_internal('_log', [
             'logs' => Logger::getLogs(),
         ]);
     }
 
+    /** POST /system/logs/delete - protected by CSRF when APP_CSRF is on. */
     public function deleteLogs() {
-        $this->json("Deleting Logs...");
-        if (request('_delete_logs') !== md5(session_get('email'))) {
-            logger("Warning", "System: Someone is trying to force delete logs" . session_get('email'));
-            return redirect('system/logs');
+        $user = Auth::user();
+        if (!Logger::deleteLogs($user->email ?? 'unknown')) {
+            logger('Error', 'System: log deletion failed');
         }
-        $this->actuallyDeleteLogs();
-    }
-
-    public function actuallyDeleteLogs() {
-
-        if (!Logger::deleteLogs(session_get('email'))) {
-            $this->error("Unable to delete", 500);
-        }
-        $this->success(null,"Logs Deleted");
+        return redirect('/system/logs');
     }
 }
