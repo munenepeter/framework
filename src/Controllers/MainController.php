@@ -2,20 +2,23 @@
 
 namespace Tabel\Controllers;
 
-use Tabel\Core\Request;
 use Tabel\Core\Middleware;
+use Tabel\Core\Request;
+use Tabel\Database\Model;
 use Tabel\Modules\Paginator;
 
 
 abstract class MainController {
-    public $validationErrors = [];
+    protected ?Model $user = null;
+    public array $validationErrors = [];
 
     public function __construct() {
+        // one-shot "old input" after a failed form submit
+        $GLOBALS['__old'] = $_SESSION['_old'] ?? [];
+        unset($_SESSION['_old']);
         $this->validationErrors = Request::getInstance()->validator()->getErrors();
     }
-
-
-    public function middleware($middleware) {
+    public function middleware(string $middleware) {
         return (new Middleware)->middleware($middleware);
     }
     public function request() {
@@ -35,7 +38,7 @@ abstract class MainController {
     public function upload(array $file, string $location, int $max_size, array $mime_types) {
         return $this->request()->upload($file, $location, $max_size, $mime_types);
     }
-    public function paginate(array $data, $per_page) {
+    public function paginate(array $data, int $per_page) {
         return Paginator::paginate($data, $per_page);
     }
     /**
@@ -171,5 +174,109 @@ abstract class MainController {
             $this->error($e->getMessage(), 400);
             return false;
         }
+    }
+
+    /**
+     * With APP_CSRF=true the framework router already rejects tokenless POSTs. If someone turns
+     * that off, still check here so this app never runs unprotected.
+     */
+    protected function ensureCsrf(): void {
+        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && !\Tabel\Modules\Csrf::enabled()) {
+            \Tabel\Modules\Csrf::verify();
+        }
+    }
+
+    protected function post(string $key, string $default = ''): string {
+        $v = $_POST[$key] ?? $default;
+        return is_array($v) ? $default : trim((string) $v);
+    }
+
+    protected function postArray(string $key): array {
+        $v = $_POST[$key] ?? [];
+        return is_array($v) ? $v : [];
+    }
+
+    protected function query(string $key, string $default = ''): string {
+        $v = $_GET[$key] ?? $default;
+        return is_array($v) ? $default : trim((string) $v);
+    }
+
+    /**
+     * Validate $_POST against a field spec: name => ['label'=>, 'rules'=>'required|max:100|numeric|email|date|in:a,b|min:0'].
+     * @return array{0: array<string,string>, 1: array<string,string>} [cleaned data, errors]
+     */
+    protected function check(array $spec): array {
+        $data = [];
+        $errors = [];
+        foreach ($spec as $name => $def) {
+            $label = $def['label'] ?? ucfirst(str_replace('_', ' ', $name));
+            $value = ($def['type'] ?? '') === 'checkbox' ? (isset($_POST[$name]) ? '1' : '0') : $this->post($name);
+            $data[$name] = $value;
+
+            foreach (explode('|', $def['rules'] ?? '') as $rule) {
+                if ($rule === '') {
+                    continue;
+                }
+                [$r, $arg] = array_pad(explode(':', $rule, 2), 2, null);
+                $empty = $value === '';
+                $msg = match (true) {
+                    $r === 'required' && $empty => "{$label} is required.",
+                    $empty => null,
+                    $r === 'max' && mb_strlen($value) > (int) $arg => "{$label} must be at most {$arg} characters.",
+                    $r === 'numeric' && !is_numeric($value) => "{$label} must be a number.",
+                    $r === 'min' && is_numeric($value) && (float) $value < (float) $arg => "{$label} must be at least {$arg}.",
+                    $r === 'email' && !filter_var($value, FILTER_VALIDATE_EMAIL) => "{$label} must be a valid email address.",
+                    $r === 'date' && (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) || strtotime($value) === false) => "{$label} must be a valid date.",
+                    $r === 'in' && !in_array($value, explode(',', (string) $arg), true) => "{$label} is not a valid choice.",
+                    default => null,
+                };
+                if ($msg) {
+                    $errors[$name] = $msg;
+                    break;
+                }
+            }
+        }
+        return [$data, $errors];
+    }
+    protected function fail(string $message, string $to): never {
+        flash('danger', $message);
+        $_SESSION['_old'] = $_POST;
+        redirect($to);
+    }
+
+    protected function failErrors(array $errors, string $to): never {
+        foreach ($errors as $e) {
+            flash('danger', $e);
+        }
+        $_SESSION['_old'] = $_POST;
+        redirect($to);
+    }
+
+    /** Run a service call; business-rule failures become a flash message + redirect back. */
+    protected function attempt(callable $fn, string $failTo): mixed {
+        try {
+            return $fn();
+        } catch (\Exception $e) {
+            $this->fail($e->getMessage(), $failTo);
+        }
+    }
+
+    protected function ok(string $message, string $to): never {
+        flash('success', $message);
+        redirect($to);
+    }
+
+    protected function csv(string $filename, array $headings, array $rows): never {
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '_', $filename) . '"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, $headings);
+        foreach ($rows as $r) {
+            // neutralise spreadsheet formula injection
+            fputcsv($out, array_map(fn($c) => is_string($c) && preg_match('/^[=+\-@]/', $c) ? "'" . $c : $c, $r));
+        }
+        fclose($out);
+        exit;
     }
 }

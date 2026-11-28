@@ -123,7 +123,7 @@ function redirect(string $path) {
  */
 function abort($message, $code, ?string $file = null, ?int $line = null, ?array $trace = null) {
     $code = filter_var($code, FILTER_VALIDATE_INT);
-    
+
     if ($code === 0 || is_string($code) || $code === "") {
         $code = 500;
     }
@@ -960,7 +960,6 @@ function getCodeContext(string $file, int $errorLine, int $contextLines = 3) {
 
 
 function getErrorMessages() {
-
     return [
         '403' => [
             'title' => 'Forbidden',
@@ -1027,5 +1026,35 @@ if (!function_exists('csrf_field')) {
     /** Hidden input to put inside every POST form (see APP_CSRF). */
     function csrf_field(): string {
         return \Tabel\Modules\Csrf::field();
+    }
+}
+
+if (!function_exists('flash')) {
+    function flash(?string $type = null, ?string $message = null): mixed {
+        if ($type !== null && $message !== null) {
+            $_SESSION['_flash'][$type][] = $message;
+            return null;
+        }
+        $all = $_SESSION['_flash'] ?? [];
+        unset($_SESSION['_flash']);
+        return $all;
+    }
+}
+if (!function_exists('old')) {
+    function old(string $key, mixed $default = ''): mixed {
+        return $GLOBALS['__old'][$key] ?? $default;
+    }
+}
+
+if (!function_exists('storage_path')) {
+    /**
+     * Get the path to the storage directory.
+     *
+     * @param string $path
+     * @return string
+     */
+    function storage_path(string $path = ''): string {
+        $base = defined('APP_ROOT') ? APP_ROOT : dirname(__DIR__);
+        return rtrim($base, '/\\') . DIRECTORY_SEPARATOR . 'storage' . ($path !== '' ? DIRECTORY_SEPARATOR . ltrim($path, '/\\') : '');
     }
 }
